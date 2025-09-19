@@ -20,6 +20,22 @@ async function checkItemExists(itemId, profileId) {
   return !!itemExists;
 }
 
+async function checkCategoryExists(categoryId, profileId) {
+  const categoryExists = await db.getPromise(
+    'SELECT * FROM category WHERE id_category = ? AND fk_profile = ?',
+    [categoryId, profileId],
+  );
+  return !!categoryExists;
+}
+
+async function checkLabelExists(labelId, profileId) {
+  const labelExists = await db.getPromise(
+    'SELECT * FROM category WHERE id_category = ? AND fk_profile = ?',
+    [labelId, profileId],
+  );
+  return !!labelExists;
+}
+
 function validateId(id) {
   const parsedId = Number(id);
   return typeof parsedId === 'number' && !isNaN(parsedId) && parsedId > 0;
@@ -49,6 +65,8 @@ function validateDate(date) {
 module.exports = {
   checkProfileExists,
   checkItemExists,
+  checkCategoryExists,
+  checkLabelExists,
   validateId,
   validateName,
   validateAmount,
