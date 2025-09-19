@@ -47,12 +47,10 @@ router.post('/', async (req, res) => {
     }
     const sql = 'INSERT INTO category (name, fk_profile) VALUES (?,?)';
     const insertResult = await db.runPromise(sql, [categoryName, profileId]);
-    return res
-      .status(201)
-      .json({
-        categoryId: insertResult.lastID,
-        message: 'Kategoria dodana pomyślnie!',
-      });
+    return res.status(201).json({
+      categoryId: insertResult.lastID,
+      message: 'Kategoria dodana pomyślnie!',
+    });
   } catch (err) {
     if (err.message.includes('UNIQUE constraint failed')) {
       return res
@@ -114,11 +112,9 @@ router.get('/:categoryId', async (req, res) => {
       'SELECT id_category, name, fk_profile FROM category WHERE id_category = ? AND fk_profile = ?';
     const resultCategory = await db.getPromise(sql, [categoryId, profileId]);
     if (!resultCategory) {
-      return res
-        .status(404)
-        .json({
-          message: 'Kategoria o podanym ID nie istnieje w tym profilu.',
-        });
+      return res.status(404).json({
+        message: 'Kategoria o podanym ID nie istnieje w tym profilu.',
+      });
     }
     return res.status(200).json(resultCategory);
   } catch (err) {
@@ -127,9 +123,8 @@ router.get('/:categoryId', async (req, res) => {
 });
 
 router.put('/:categoryId', async (req, res) => {
-  const profileId = req.query.profileId;
-  const categoryName = req.body.categoryName;
   const categoryId = req.params.categoryId;
+  const { categoryName, profileId } = req.body;
   if (!profileId || !categoryName) {
     return res
       .status(400)
@@ -176,11 +171,9 @@ router.put('/:categoryId', async (req, res) => {
       profileId,
     ]);
     if (updateResult.changes === 0) {
-      return res
-        .status(404)
-        .json({
-          message: 'Kategoria o podanym ID nie istnieje w tym profilu.',
-        });
+      return res.status(404).json({
+        message: 'Kategoria o podanym ID nie istnieje w tym profilu.',
+      });
     }
     return res
       .status(200)
@@ -216,21 +209,17 @@ router.delete('/:categoryId', async (req, res) => {
       'SELECT COUNT(DISTINCT ic.fk_item) AS count FROM item_category ic JOIN items i ON ic.fk_item = i.id_item WHERE ic.fk_category = ? AND i.fk_profile = ?';
     const countResult = await db.getPromise(sql, [categoryId, profileId]);
     if (countResult.count > 0) {
-      return res
-        .status(409)
-        .json({
-          message:
-            'Nie można usunąć kategorii, ponieważ jest powiązana z co najmniej jedną pozycją wydatku.',
-        });
+      return res.status(409).json({
+        message:
+          'Nie można usunąć kategorii, ponieważ jest powiązana z co najmniej jedną pozycją wydatku.',
+      });
     }
     sql = 'DELETE FROM category WHERE id_category = ? AND fk_profile = ?';
     const deleteResult = await db.runPromise(sql, [categoryId, profileId]);
     if (deleteResult.changes === 0) {
-      return res
-        .status(404)
-        .json({
-          message: 'Kategoria o podanym ID nie istnieje w tym profilu.',
-        });
+      return res.status(404).json({
+        message: 'Kategoria o podanym ID nie istnieje w tym profilu.',
+      });
     }
     return res
       .status(200)
