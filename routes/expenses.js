@@ -20,7 +20,6 @@ const {
   checkProfileExists,
   checkItemExists,
   validateId,
-  validateName,
   validateAmount,
   validateDate,
 } = require('../helpers/helpers.js');
@@ -40,7 +39,7 @@ router.post('/', async (req, res) => {
   if (!validateId(itemId)) {
     return res
       .status(400)
-      .json({ error: 'ID wydatku zawiera niepoprawne dane.' });
+      .json({ error: 'ID pozycji (itemId) zawiera niepoprawne dane.' });
   }
   if (!validateAmount(amount)) {
     return res.status(400).json({ error: 'Kwota zawiera niepoprawne dane.' });
@@ -70,21 +69,6 @@ router.post('/', async (req, res) => {
       message: 'Wydatek dodany pomyślnie!',
     });
   } catch (err) {
-    // if (err.message.includes('FOREIGN KEY constraint failed')) {
-    //   return res.status(400).json({ error: 'Podane ID pozycji nie istnieje.' });
-    // }
-    // if (err.message.includes('CHECK constraint failed')) {
-    //   return res.status(400).json({ error: 'Kwota musi być większa niż 0, a data nie może być w przyszłości.' });
-    // }
-    // if (err.message.includes('datatype mismatch')) {
-    //   return res.status(400).json({ error: 'Nieprawidłowy format daty. Użyj RRRR-MM-DD.' });
-    // }
-    // if (err.message.includes('NOT NULL constraint failed')) {
-    //   return res.status(400).json({ error: 'Wszystkie pola (fk_item, amount, date, fk_profile) są wymagane.' });
-    // }
-    // if (err.message.includes('UNIQUE constraint failed')) {
-    //   return res.status(409).json({ error: 'Taki wydatek już istnieje.' });
-    // }
     return res.status(500).json({ error: err.message });
   }
 });
@@ -99,130 +83,205 @@ router.get('/', async (req, res) => {
       .status(400)
       .json({ error: 'ID profilu zawiera niepoprawne dane.' });
   }
-  const sql = `
-    SELECT
-      e.id_expense,
-      e.amount,
-      e.date,
-      i.name AS item_name,
-      c.name AS category_name,
-      GROUP_CONCAT(l.name) AS labels
-    FROM
-      expenses e
-    JOIN
-      items i ON e.fk_item = i.id_item
-    JOIN
-      item_category ic ON i.id_item = ic.fk_item
-    JOIN
-      category c ON ic.fk_category = c.id_category
-    LEFT JOIN
-      item_label il ON i.id_item = il.fk_item
-    LEFT JOIN
-      labels l ON il.fk_label = l.id_label
-    GROUP BY
-      e.id_expense
-    ORDER BY
-      e.date DESC
-  `;
-  db.all(sql, [], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(rows);
-  });
-});
-
-router.get('/:expenseId', (req, res) => {
-  const expenseId = req.params.expenseId;
-  const sql = `
-    SELECT
-      e.id_expense,
-      e.amount,
-      e.date,
-      i.id_item AS fk_item,
-      i.name AS item_name,
-      c.id_category AS fk_category,
-      c.name AS category_name,
-      GROUP_CONCAT(l.name) AS labels,
-      GROUP_CONCAT(l.id_label) AS label_ids
-    FROM
-      expenses e
-    JOIN
-      items i ON e.fk_item = i.id_item
-    JOIN
-      item_category ic ON i.id_item = ic.fk_item
-    JOIN
-      category c ON ic.fk_category = c.id_category
-    LEFT JOIN
-      item_label il ON i.id_item = il.fk_item
-    LEFT JOIN
-      labels l ON il.fk_label = l.id_label
-    WHERE
-      e.id_expense = ?
-    GROUP BY
-      e.id_expense
-  `;
-
-  db.get(sql, [expenseId], (err, row) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    if (!row) {
+  try {
+    if (!(await checkProfileExists(profileId))) {
       return res
         .status(404)
-        .json({ message: 'Wydatek o podanym ID nie istnieje.' });
+        .json({ message: 'Profil o podanym ID nie istnieje.' });
     }
-    res.json(row);
-  });
+    const sql = `
+      SELECT
+        e.id_expense,
+        e.amount,
+        e.date,
+        e.fk_profile,
+        i.name AS item_name,
+        c.name AS category_name,
+        GROUP_CONCAT(l.name) AS labels
+      FROM
+        expenses e
+      JOIN
+        items i ON e.fk_item = i.id_item
+      JOIN
+        item_category ic ON i.id_item = ic.fk_item
+      JOIN
+        category c ON ic.fk_category = c.id_category
+      LEFT JOIN
+        item_label il ON i.id_item = il.fk_item
+      LEFT JOIN
+        labels l ON il.fk_label = l.id_label
+      WHERE
+        e.fk_profile = ?
+      GROUP BY
+        e.id_expense
+      ORDER BY
+        e.date DESC
+    `;
+    const resultExpenses = await db.allPromise(sql, [profileId]);
+    return res.status(200).json(resultExpenses);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
-router.delete('/:expenseId', (req, res) => {
+router.get('/:expenseId', async (req, res) => {
+  const profileId = req.query.profileId;
   const expenseId = req.params.expenseId;
-  const sql = 'DELETE FROM expenses WHERE id_expense = ?';
-
-  db.run(sql, [expenseId], function (err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    if (this.changes === 0) {
-      return res
-        .status(404)
-        .json({ message: 'Wydatek o podanym ID nie istnieje.' });
-    }
-    res.json({ message: 'Wydatek usunięty pomyślnie.' });
-  });
-});
-
-router.put('/:expenseId', (req, res) => {
-  const expenseId = req.params.expenseId;
-  const { itemId, amount, date } = req.body;
-
-  if (!itemId || !amount || !date) {
+  if (!profileId) {
+    return res.status(400).json({ error: 'ID profilu jest wymagane.' });
+  }
+  if (!validateId(profileId)) {
     return res
       .status(400)
-      .json({ error: 'Wszystkie pola (fk_item, amount, date) są wymagane.' });
+      .json({ error: 'ID profilu zawiera niepoprawne dane.' });
   }
-
-  const sql = `
-    UPDATE expenses
-    SET fk_item = ?,
-        amount = ?,
-        date = ?
-    WHERE id_expense = ?
-  `;
-  const values = [itemId, amount, date, expenseId];
-
-  db.run(sql, values, function (err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
+  if (!validateId(expenseId)) {
+    return res
+      .status(400)
+      .json({ error: 'ID wydatku zawiera niepoprawne dane.' });
+  }
+  try {
+    if (!(await checkProfileExists(profileId))) {
+      return res
+        .status(404)
+        .json({ message: 'Profil o podanym ID nie istnieje.' });
     }
-    if (this.changes === 0) {
+    const sql = `
+          SELECT
+            e.id_expense,
+            e.amount,
+            e.date,
+            e.fk_profile,
+            i.id_item AS fk_item,
+            i.name AS item_name,
+            c.id_category AS fk_category,
+            c.name AS category_name,
+            GROUP_CONCAT(l.name) AS labels,
+            GROUP_CONCAT(l.id_label) AS label_ids
+          FROM
+            expenses e
+          JOIN
+            items i ON e.fk_item = i.id_item
+          JOIN
+            item_category ic ON i.id_item = ic.fk_item
+          JOIN
+            category c ON ic.fk_category = c.id_category
+          LEFT JOIN
+            item_label il ON i.id_item = il.fk_item
+          LEFT JOIN
+            labels l ON il.fk_label = l.id_label
+          WHERE
+            e.id_expense = ? AND e.fk_profile = ?
+          GROUP BY
+            e.id_expense
+        `;
+    const resultExpense = await db.getPromise(sql, [categoryId, profileId]);
+    if (!resultExpense) {
       return res.status(404).json({
-        message: 'Wydatek o podanym ID nie istnieje lub nie zmieniono danych.',
+        message: 'Wydatek o podanym ID nie istnieje w tym profilu.',
       });
     }
-    res.json({ message: 'Wydatek zaktualizowany pomyślnie.' });
-  });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/:expenseId', async (req, res) => {
+  const expenseId = req.params.expenseId;
+  const { itemId, amount, date, profileId } = req.body;
+  if (!itemId || !amount || !date || !profileId) {
+    return res.status(400).json({
+      error: 'Wszystkie pola (itemId, amount, date, profileId) są wymagane.',
+    });
+  }
+  if (!validateId(profileId)) {
+    return res
+      .status(400)
+      .json({ error: 'ID profilu (profileId) zawiera niepoprawne dane.' });
+  }
+  if (!validateId(expenseId)) {
+    return res
+      .status(400)
+      .json({ error: 'ID wydatku (expenseId) zawiera niepoprawne dane.' });
+  }
+  if (!validateId(itemId)) {
+    return res
+      .status(400)
+      .json({ error: 'ID pozycji (itemId) zawiera niepoprawne dane.' });
+  }
+  if (!validateAmount(amount)) {
+    return res.status(400).json({ error: 'Kwota zawiera nie poprawne dane.' });
+  }
+  if (!validateDate(date)) {
+    return res.status(400).json({
+      error: 'Data zawiera niepoprawne dane lub jest w przyszłości. ',
+    });
+  }
+  try {
+    if (!(await checkProfileExists(profileId))) {
+      return res
+        .status(404)
+        .json({ message: 'Profil o podanym ID nie istnieje.' });
+    }
+    if (!(await checkExpenseExists(expenseId))) {
+      return res
+        .status(404)
+        .json({ message: 'Wydatek (expenseId) o podanym ID nie istnieje.' });
+    }
+    if (!(await checkItemExists(itemId))) {
+      return res
+        .status(404)
+        .json({ message: 'Pozycja (itemId) o podanym ID nie istnieje.' });
+    }
+    const sql =
+      'UPDATE expenses SET amount = ?, date = ? WHERE id_expense = ? AND fk_item = ? AND fk_profile = ?';
+    const values = [amount, date, expenseId, itemId, profileId];
+    const updateResult = await db.runPromise(sql, values);
+    if (updateResult.changes === 0) {
+      return res.status(404).json({
+        message:
+          'Wydatek o podanym ID nie istnieje w danym profilu lub nie zmieniono danych.',
+      });
+    }
+    return res.json({ message: 'Wydatek zaktualizowany pomyślnie.' });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/:expenseId', async (req, res) => {
+  const profileId = req.query.profileId;
+  const expenseId = req.params.expenseId;
+  if (!profileId) {
+    return res.status(400).json({ error: 'ID profilu jest wymagane.' });
+  }
+  if (!validateId(profileId)) {
+    return res
+      .status(400)
+      .json({ error: 'ID profilu zawiera niepoprawne dane.' });
+  }
+  if (!validateId(expenseId)) {
+    return res
+      .status(400)
+      .json({ error: 'ID wydatku zawiera niepoprawne dane.' });
+  }
+  try {
+    if (!(await checkProfileExists(profileId))) {
+      return res
+        .status(404)
+        .json({ message: 'Profil o podanym ID nie istnieje.' });
+    }
+    const sql = 'DELETE FROM expenses WHERE id_expense = ? AND fk_profile = ?';
+    const deleteResult = await db.runPromise(sql, [expenseId, profileId]);
+    if (deleteResult.changes === 0) {
+      return res
+        .status(404)
+        .json({ message: 'Wydatek o podanym ID nie istnieje w tym profilu.' });
+    }
+    return res.status(200).json({ message: 'Wydatek usunięty pomyślnie.' });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;
