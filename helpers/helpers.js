@@ -22,7 +22,7 @@ async function checkItemExists(itemId, profileId) {
 
 async function checkCategoryExists(categoryId, profileId) {
   const categoryExists = await db.getPromise(
-    'SELECT * FROM category WHERE id_category = ? AND fk_profile = ?',
+    'SELECT * FROM categories WHERE id_category = ? AND fk_profile = ?',
     [categoryId, profileId],
   );
   return !!categoryExists;
@@ -30,7 +30,7 @@ async function checkCategoryExists(categoryId, profileId) {
 
 async function checkLabelExists(labelId, profileId) {
   const labelExists = await db.getPromise(
-    'SELECT * FROM category WHERE id_category = ? AND fk_profile = ?',
+    'SELECT * FROM labels WHERE id_label = ? AND fk_profile = ?',
     [labelId, profileId],
   );
   return !!labelExists;
@@ -95,6 +95,47 @@ function validateCollectionOf(collection, field_type) {
   return true;
 }
 
+function getErrorIfIdInvalid(id, id_type) {
+  const idTypes = {
+    profile: 'profilu',
+    category: 'kategorii',
+    item: 'pozycji',
+    label: 'etykiety',
+    expense: 'wydatku',
+  };
+  const idType = idTypes[id_type];
+  if (!idType) {
+    return 'Podany typ ID nie jest poprawny.';
+  }
+  if (!id) {
+    return `ID ${idType} jest wymagany.`;
+  }
+  if (!validateId(id)) {
+    return `ID ${idType} zawiera niepoprawne dane.`;
+  }
+  return null;
+}
+
+function getErrorIfNameInvalid(name, name_type) {
+  const nameTypes = {
+    category: 'kategorii',
+    profile: 'profilu',
+    item: 'pozycji',
+    label: 'etykiety',
+  };
+  const nameType = nameTypes[name_type];
+  if (!nameType) {
+    return 'Podany typ nazwy nie jest poprawny.';
+  }
+  if (!name) {
+    return `Nazwa ${nameType} jest wymagany.`;
+  }
+  if (!validateName(name)) {
+    return `Nazwa ${nameType} zawiera niepoprawne dane.`;
+  }
+  return null;
+}
+
 module.exports = {
   checkProfileExists,
   checkItemExists,
@@ -105,4 +146,6 @@ module.exports = {
   validateAmount,
   validateDate,
   validateCollectionOf,
+  getErrorIfIdInvalid,
+  getErrorIfNameInvalid,
 };
