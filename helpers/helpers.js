@@ -38,7 +38,12 @@ async function checkLabelExists(labelId, profileId) {
 
 function validateId(id) {
   const parsedId = Number(id);
-  return typeof parsedId === 'number' && !isNaN(parsedId) && parsedId > 0;
+  return (
+    typeof parsedId === 'number' &&
+    !isNaN(parsedId) &&
+    Number.isInteger(parsedId) &&
+    parsedId > 0
+  );
 }
 
 function validateName(name) {
@@ -47,9 +52,15 @@ function validateName(name) {
 
 function validateAmount(amount) {
   const parsedAmount = Number(amount);
-  return (
-    typeof parsedAmount === 'number' && !isNaN(parsedAmount) && parsedAmount > 0
-  );
+  if (
+    typeof parsedAmount !== 'number' ||
+    isNaN(parsedAmount) ||
+    parsedAmount <= 0
+  ) {
+    return false;
+  }
+  const isDecimalValid = Number.isInteger(parsedAmount * 100);
+  return isDecimalValid;
 }
 
 function validateDate(date) {
@@ -62,6 +73,28 @@ function validateDate(date) {
   return !isNaN(d) && d.toISOString().slice(0, 10) === date && d <= today;
 }
 
+function validateCollectionOf(collection, field_type) {
+  const validators = {
+    id: validateId,
+    name: validateName,
+    amount: validateAmount,
+    date: validateDate,
+  };
+  if (!Array.isArray(collection) || collection.length === 0) {
+    return false;
+  }
+  const validator = validators[field_type];
+  if (!validator) {
+    return false;
+  }
+  for (const entry of collection) {
+    if (!validator(entry)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 module.exports = {
   checkProfileExists,
   checkItemExists,
@@ -71,4 +104,5 @@ module.exports = {
   validateName,
   validateAmount,
   validateDate,
+  validateCollectionOf,
 };
