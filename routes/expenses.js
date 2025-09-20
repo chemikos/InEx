@@ -19,43 +19,43 @@ db.runPromise = function (...args) {
 const {
   checkProfileExists,
   checkItemExists,
-  validateId,
-  validateAmount,
-  validateDate,
+  checkExpenseExists,
+  getErrorIfIdInvalid,
+  getErrorIfAmountInvalid,
+  getErrorIfDateInvalid,
 } = require('../helpers/helpers.js');
 
 router.post('/', async (req, res) => {
-  const { itemId, amount, date, profileId } = req.body;
-  if (!itemId || !amount || !date || !profileId) {
-    return res
-      .status(400)
-      .json({ error: 'Wymagane pola to: itemId, amount, date, profileId.' });
+  const profileId = req.body.profileId;
+  const profileIdError = getErrorIfIdInvalid(profileId, 'profile');
+  if (profileIdError) {
+    return res.status(400).json({ error: profileIdError });
   }
-  if (!validateId(profileId)) {
-    return res
-      .status(400)
-      .json({ error: 'ID profilu zawiera niepoprawne dane.' });
+  const itemId = req.body.itemId;
+  const itemIdError = getErrorIfIdInvalid(itemId, 'item');
+  if (itemIdError) {
+    return res.status(400).json({ error: itemIdError });
   }
-  if (!validateId(itemId)) {
-    return res
-      .status(400)
-      .json({ error: 'ID pozycji (itemId) zawiera niepoprawne dane.' });
+  const amount = req.body.amount;
+  const amountError = getErrorIfAmountInvalid(amount);
+  if (amountError) {
+    return res.status(400).json({ error: amountError });
   }
-  if (!validateAmount(amount)) {
-    return res.status(400).json({ error: 'Kwota zawiera niepoprawne dane.' });
-  }
-  if (!validateDate(date)) {
-    return res
-      .status(400)
-      .json({ error: 'Data zawiera niepoprawne dane lub jest w przyszłości.' });
+  const date = req.body.date;
+  const dateError = getErrorIfDateInvalid(date);
+  if (dateError) {
+    return res.status(400).json({ error: dateError });
   }
   try {
+    await db.runPromise('BEGIN TRANSACTION;');
     if (!(await checkProfileExists(profileId))) {
+      await db.runPromise('ROLLBACK;');
       return res
         .status(404)
         .json({ message: 'Profil o podanym ID nie istnieje.' });
     }
     if (!(await checkItemExists(itemId, profileId))) {
+      await db.runPromise('ROLLBACK;');
       return res
         .status(404)
         .json({ message: 'Pozycja o podanym ID nie istnieje w tym profilu.' });
@@ -64,24 +64,25 @@ router.post('/', async (req, res) => {
       'INSERT INTO expenses (fk_item, amount, date, fk_profile) VALUES (?, ?, ?, ?)';
     const values = [itemId, amount, date, profileId];
     const insertResult = await db.runPromise(sql, values);
+    await db.runPromise('COMMIT;');
     return res.status(201).json({
       expenseId: insertResult.lastID,
       message: 'Wydatek dodany pomyślnie!',
     });
   } catch (err) {
+    await db.runPromise('ROLLBACK;');
     return res.status(500).json({ error: err.message });
   }
 });
 
 router.get('/', async (req, res) => {
-  const profileId = req.query.profileId;
-  if (!profileId) {
-    return res.status(400).json({ error: 'ID profilu jest wymagane.' });
-  }
-  if (!validateId(profileId)) {
-    return res
-      .status(400)
-      .json({ error: 'ID profilu zawiera niepoprawne dane.' });
+  const rawProfileId = req.query.profileId;
+  const profileId = Array.isArray(rawProfileId)
+    ? rawProfileId[0]
+    : rawProfileId;
+  const profileIdError = getErrorIfIdInvalid(profileId, 'profile');
+  if (profileIdError) {
+    return res.status(400).json({ error: profileIdError });
   }
   try {
     if (!(await checkProfileExists(profileId))) {
@@ -125,20 +126,18 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/:expenseId', async (req, res) => {
-  const profileId = req.query.profileId;
+  const rawProfileId = req.query.profileId;
+  const profileId = Array.isArray(rawProfileId)
+    ? rawProfileId[0]
+    : rawProfileId;
+  const profileIdError = getErrorIfIdInvalid(profileId, 'profile');
+  if (profileIdError) {
+    return res.status(400).json({ error: profileIdError });
+  }
   const expenseId = req.params.expenseId;
-  if (!profileId) {
-    return res.status(400).json({ error: 'ID profilu jest wymagane.' });
-  }
-  if (!validateId(profileId)) {
-    return res
-      .status(400)
-      .json({ error: 'ID profilu zawiera niepoprawne dane.' });
-  }
-  if (!validateId(expenseId)) {
-    return res
-      .status(400)
-      .json({ error: 'ID wydatku zawiera niepoprawne dane.' });
+  const expenseIdError = getErrorIfIdInvalid(expenseId, 'expense');
+  if (expenseIdError) {
+    return res.status(400).json({ error: expenseIdError });
   }
   try {
     if (!(await checkProfileExists(profileId))) {
@@ -175,7 +174,7 @@ router.get('/:expenseId', async (req, res) => {
           GROUP BY
             e.id_expense
         `;
-    const resultExpense = await db.getPromise(sql, [categoryId, profileId]);
+    const resultExpense = await db.getPromise(sql, [expenseId, profileId]);
     if (!resultExpense) {
       return res.status(404).json({
         message: 'Wydatek o podanym ID nie istnieje w tym profilu.',
@@ -187,48 +186,47 @@ router.get('/:expenseId', async (req, res) => {
 });
 
 router.put('/:expenseId', async (req, res) => {
+  const profileId = req.body.profileId;
+  const profileIdError = getErrorIfIdInvalid(profileId, 'profile');
+  if (profileIdError) {
+    return res.status(400).json({ error: profileIdError });
+  }
+  const itemId = req.body.itemId;
+  const itemIdError = getErrorIfIdInvalid(itemId, 'item');
+  if (itemIdError) {
+    return res.status(400).json({ error: itemIdError });
+  }
+  const amount = req.body.amount;
+  const amountError = getErrorIfAmountInvalid(amount);
+  if (amountError) {
+    return res.status(400).json({ error: amountError });
+  }
+  const date = req.body.date;
+  const dateError = getErrorIfDateInvalid(date);
+  if (dateError) {
+    return res.status(400).json({ error: dateError });
+  }
   const expenseId = req.params.expenseId;
-  const { itemId, amount, date, profileId } = req.body;
-  if (!itemId || !amount || !date || !profileId) {
-    return res.status(400).json({
-      error: 'Wszystkie pola (itemId, amount, date, profileId) są wymagane.',
-    });
-  }
-  if (!validateId(profileId)) {
-    return res
-      .status(400)
-      .json({ error: 'ID profilu (profileId) zawiera niepoprawne dane.' });
-  }
-  if (!validateId(expenseId)) {
-    return res
-      .status(400)
-      .json({ error: 'ID wydatku (expenseId) zawiera niepoprawne dane.' });
-  }
-  if (!validateId(itemId)) {
-    return res
-      .status(400)
-      .json({ error: 'ID pozycji (itemId) zawiera niepoprawne dane.' });
-  }
-  if (!validateAmount(amount)) {
-    return res.status(400).json({ error: 'Kwota zawiera nie poprawne dane.' });
-  }
-  if (!validateDate(date)) {
-    return res.status(400).json({
-      error: 'Data zawiera niepoprawne dane lub jest w przyszłości. ',
-    });
+  const expenseIdError = getErrorIfIdInvalid(expenseId, 'expense');
+  if (expenseIdError) {
+    return res.status(400).json({ error: expenseIdError });
   }
   try {
+    await db.runPromise('BEGIN TRANSACTION;');
     if (!(await checkProfileExists(profileId))) {
+      await db.runPromise('ROLLBACK;');
       return res
         .status(404)
         .json({ message: 'Profil o podanym ID nie istnieje.' });
     }
-    if (!(await checkExpenseExists(expenseId))) {
+    if (!(await checkExpenseExists(expenseId, profileId))) {
+      await db.runPromise('ROLLBACK;');
       return res
         .status(404)
         .json({ message: 'Wydatek (expenseId) o podanym ID nie istnieje.' });
     }
-    if (!(await checkItemExists(itemId))) {
+    if (!(await checkItemExists(itemId, profileId))) {
+      await db.runPromise('ROLLBACK;');
       return res
         .status(404)
         .json({ message: 'Pozycja (itemId) o podanym ID nie istnieje.' });
@@ -238,35 +236,40 @@ router.put('/:expenseId', async (req, res) => {
     const values = [amount, date, expenseId, itemId, profileId];
     const updateResult = await db.runPromise(sql, values);
     if (updateResult.changes === 0) {
+      await db.runPromise('ROLLBACK;');
       return res.status(404).json({
         message:
           'Wydatek o podanym ID nie istnieje w danym profilu lub nie zmieniono danych.',
       });
     }
-    return res.json({ message: 'Wydatek zaktualizowany pomyślnie.' });
+    await db.runPromise('COMMIT;');
+    return res
+      .status(200)
+      .json({ message: 'Wydatek zaktualizowany pomyślnie.' });
   } catch (err) {
+    await db.runPromise('ROLLBACK;');
     return res.status(500).json({ error: err.message });
   }
 });
 
 router.delete('/:expenseId', async (req, res) => {
-  const profileId = req.query.profileId;
+  const rawProfileId = req.query.profileId;
+  const profileId = Array.isArray(rawProfileId)
+    ? rawProfileId[0]
+    : rawProfileId;
+  const profileIdError = getErrorIfIdInvalid(profileId, 'profile');
+  if (profileIdError) {
+    return res.status(400).json({ error: profileIdError });
+  }
   const expenseId = req.params.expenseId;
-  if (!profileId) {
-    return res.status(400).json({ error: 'ID profilu jest wymagane.' });
-  }
-  if (!validateId(profileId)) {
-    return res
-      .status(400)
-      .json({ error: 'ID profilu zawiera niepoprawne dane.' });
-  }
-  if (!validateId(expenseId)) {
-    return res
-      .status(400)
-      .json({ error: 'ID wydatku zawiera niepoprawne dane.' });
+  const expenseIdError = getErrorIfIdInvalid(expenseId, 'expense');
+  if (expenseIdError) {
+    return res.status(400).json({ error: expenseIdError });
   }
   try {
+    await db.runPromise('BEGIN TRANSACTION;');
     if (!(await checkProfileExists(profileId))) {
+      await db.runPromise('ROLLBACK;');
       return res
         .status(404)
         .json({ message: 'Profil o podanym ID nie istnieje.' });
@@ -274,12 +277,15 @@ router.delete('/:expenseId', async (req, res) => {
     const sql = 'DELETE FROM expenses WHERE id_expense = ? AND fk_profile = ?';
     const deleteResult = await db.runPromise(sql, [expenseId, profileId]);
     if (deleteResult.changes === 0) {
+      await db.runPromise('ROLLBACK;');
       return res
         .status(404)
         .json({ message: 'Wydatek o podanym ID nie istnieje w tym profilu.' });
     }
+    await db.runPromise('COMMIT;');
     return res.status(200).json({ message: 'Wydatek usunięty pomyślnie.' });
   } catch (err) {
+    await db.runPromise('ROLLBACK;');
     return res.status(500).json({ error: err.message });
   }
 });
