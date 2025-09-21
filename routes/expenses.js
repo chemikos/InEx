@@ -20,32 +20,39 @@ const {
   checkProfileExists,
   checkItemExists,
   checkExpenseExists,
-  getErrorIfIdInvalid,
-  getErrorIfAmountInvalid,
-  getErrorIfDateInvalid,
+  getNormalizedId,
 } = require('../helpers/helpers.js');
 
 router.post('/', async (req, res) => {
-  const profileId = req.body.profileId;
-  const profileIdError = getErrorIfIdInvalid(profileId, 'profile');
-  if (profileIdError) {
-    return res.status(400).json({ error: profileIdError });
+  const validationParams = [
+    {
+      value: req.body.profileId,
+      field: 'id',
+      type: 'profile',
+    },
+    {
+      value: req.body.itemId,
+      field: 'id',
+      type: 'item',
+    },
+    {
+      value: req.body.amount,
+      field: 'amount',
+      type: null,
+    },
+    {
+      value: req.body.date,
+      field: 'date',
+      type: null,
+    },
+  ];
+  for (const param of validationParams) {
+    const error = getValidationError(param.value, param.field, param.type);
+    if (error) {
+      return res.status(400).json({ error });
+    }
   }
-  const itemId = req.body.itemId;
-  const itemIdError = getErrorIfIdInvalid(itemId, 'item');
-  if (itemIdError) {
-    return res.status(400).json({ error: itemIdError });
-  }
-  const amount = req.body.amount;
-  const amountError = getErrorIfAmountInvalid(amount);
-  if (amountError) {
-    return res.status(400).json({ error: amountError });
-  }
-  const date = req.body.date;
-  const dateError = getErrorIfDateInvalid(date);
-  if (dateError) {
-    return res.status(400).json({ error: dateError });
-  }
+  const { profileId, itemId, amount, date } = req.body;
   try {
     await db.runPromise('BEGIN TRANSACTION;');
     if (!(await checkProfileExists(profileId))) {
@@ -76,14 +83,20 @@ router.post('/', async (req, res) => {
 });
 
 router.get('/', async (req, res) => {
-  const rawProfileId = req.query.profileId;
-  const profileId = Array.isArray(rawProfileId)
-    ? rawProfileId[0]
-    : rawProfileId;
-  const profileIdError = getErrorIfIdInvalid(profileId, 'profile');
-  if (profileIdError) {
-    return res.status(400).json({ error: profileIdError });
+  const validationParams = [
+    {
+      value: getNormalizedId(req.query.profileId),
+      field: 'id',
+      type: 'profile',
+    },
+  ];
+  for (const param of validationParams) {
+    const error = getValidationError(param.value, param.field, param.type);
+    if (error) {
+      return res.status(400).json({ error });
+    }
   }
+  const profileId = validationParams[0].value;
   try {
     if (!(await checkProfileExists(profileId))) {
       return res
@@ -126,19 +139,26 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/:expenseId', async (req, res) => {
-  const rawProfileId = req.query.profileId;
-  const profileId = Array.isArray(rawProfileId)
-    ? rawProfileId[0]
-    : rawProfileId;
-  const profileIdError = getErrorIfIdInvalid(profileId, 'profile');
-  if (profileIdError) {
-    return res.status(400).json({ error: profileIdError });
+  const validationParams = [
+    {
+      value: getNormalizedId(req.query.profileId),
+      field: 'id',
+      type: 'profile',
+    },
+    {
+      value: req.params.expenseId,
+      field: 'id',
+      type: 'expense',
+    },
+  ];
+  for (const param of validationParams) {
+    const error = getValidationError(param.value, param.field, param.type);
+    if (error) {
+      return res.status(400).json({ error });
+    }
   }
+  const profileId = validationParams[0].value;
   const expenseId = req.params.expenseId;
-  const expenseIdError = getErrorIfIdInvalid(expenseId, 'expense');
-  if (expenseIdError) {
-    return res.status(400).json({ error: expenseIdError });
-  }
   try {
     if (!(await checkProfileExists(profileId))) {
       return res
@@ -186,31 +206,41 @@ router.get('/:expenseId', async (req, res) => {
 });
 
 router.put('/:expenseId', async (req, res) => {
-  const profileId = req.body.profileId;
-  const profileIdError = getErrorIfIdInvalid(profileId, 'profile');
-  if (profileIdError) {
-    return res.status(400).json({ error: profileIdError });
+  const validationParams = [
+    {
+      value: req.body.profileId,
+      field: 'id',
+      type: 'profile',
+    },
+    {
+      value: req.body.itemId,
+      field: 'id',
+      type: 'item',
+    },
+    {
+      value: req.body.amount,
+      field: 'amount',
+      type: null,
+    },
+    {
+      value: req.body.date,
+      field: 'date',
+      type: null,
+    },
+    {
+      value: req.params.expenseId,
+      field: 'id',
+      type: 'expense',
+    },
+  ];
+  for (const param of validationParams) {
+    const error = getValidationError(param.value, param.field, param.type);
+    if (error) {
+      return res.status(400).json({ error });
+    }
   }
-  const itemId = req.body.itemId;
-  const itemIdError = getErrorIfIdInvalid(itemId, 'item');
-  if (itemIdError) {
-    return res.status(400).json({ error: itemIdError });
-  }
-  const amount = req.body.amount;
-  const amountError = getErrorIfAmountInvalid(amount);
-  if (amountError) {
-    return res.status(400).json({ error: amountError });
-  }
-  const date = req.body.date;
-  const dateError = getErrorIfDateInvalid(date);
-  if (dateError) {
-    return res.status(400).json({ error: dateError });
-  }
+  const { profileId, itemId, amount, date } = req.body;
   const expenseId = req.params.expenseId;
-  const expenseIdError = getErrorIfIdInvalid(expenseId, 'expense');
-  if (expenseIdError) {
-    return res.status(400).json({ error: expenseIdError });
-  }
   try {
     await db.runPromise('BEGIN TRANSACTION;');
     if (!(await checkProfileExists(profileId))) {
@@ -253,19 +283,26 @@ router.put('/:expenseId', async (req, res) => {
 });
 
 router.delete('/:expenseId', async (req, res) => {
-  const rawProfileId = req.query.profileId;
-  const profileId = Array.isArray(rawProfileId)
-    ? rawProfileId[0]
-    : rawProfileId;
-  const profileIdError = getErrorIfIdInvalid(profileId, 'profile');
-  if (profileIdError) {
-    return res.status(400).json({ error: profileIdError });
+  const validationParams = [
+    {
+      value: getNormalizedId(req.query.profileId),
+      field: 'id',
+      type: 'profile',
+    },
+    {
+      value: req.params.expenseId,
+      field: 'id',
+      type: 'expense',
+    },
+  ];
+  for (const param of validationParams) {
+    const error = getValidationError(param.value, param.field, param.type);
+    if (error) {
+      return res.status(400).json({ error });
+    }
   }
+  const profileId = validationParams[0].value;
   const expenseId = req.params.expenseId;
-  const expenseIdError = getErrorIfIdInvalid(expenseId, 'expense');
-  if (expenseIdError) {
-    return res.status(400).json({ error: expenseIdError });
-  }
   try {
     await db.runPromise('BEGIN TRANSACTION;');
     if (!(await checkProfileExists(profileId))) {
