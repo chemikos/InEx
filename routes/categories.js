@@ -18,21 +18,30 @@ db.runPromise = function (...args) {
 
 const {
   checkProfileExists,
-  getErrorIfIdInvalid,
-  getErrorIfNameInvalid,
+  getValidationError,
+  getNormalizedId,
 } = require('../helpers/helpers.js');
 
 router.post('/', async (req, res) => {
-  const profileId = req.body.profileId;
-  const profileIdError = getErrorIfIdInvalid(profileId, 'profile');
-  if (profileIdError) {
-    return res.status(400).json({ error: profileIdError });
+  const validationParams = [
+    {
+      value: req.body.profileId,
+      field: 'id',
+      type: 'profile',
+    },
+    {
+      value: req.body.categoryName,
+      field: 'name',
+      type: 'category',
+    },
+  ];
+  for (const param of validationParams) {
+    const error = getValidationError(param.value, param.field, param.type);
+    if (error) {
+      return res.status(400).json({ error });
+    }
   }
-  const categoryName = req.body.categoryName;
-  const categoryNameError = getErrorIfNameInvalid(categoryName, 'category');
-  if (categoryNameError) {
-    return res.status(400).json({ error: categoryNameError });
-  }
+  const { profileId, categoryName } = req.body;
   try {
     await db.runPromise('BEGIN TRANSACTION;');
     if (!(await checkProfileExists(profileId))) {
@@ -60,14 +69,20 @@ router.post('/', async (req, res) => {
 });
 
 router.get('/', async (req, res) => {
-  const rawProfileId = req.query.profileId;
-  const profileId = Array.isArray(rawProfileId)
-    ? rawProfileId[0]
-    : rawProfileId;
-  const profileIdError = getErrorIfIdInvalid(profileId, 'profile');
-  if (profileIdError) {
-    return res.status(400).json({ error: profileIdError });
+  const validationParams = [
+    {
+      value: getNormalizedId(req.query.profileId),
+      field: 'id',
+      type: 'profile',
+    },
+  ];
+  for (const param of validationParams) {
+    const error = getValidationError(param.value, param.field, param.type);
+    if (error) {
+      return res.status(400).json({ error });
+    }
   }
+  const profileId = validationParams[0].value;
   try {
     if (!(await checkProfileExists(profileId))) {
       return res
@@ -84,19 +99,26 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/:categoryId', async (req, res) => {
-  const rawProfileId = req.query.profileId;
-  const profileId = Array.isArray(rawProfileId)
-    ? rawProfileId[0]
-    : rawProfileId;
-  const profileIdError = getErrorIfIdInvalid(profileId, 'profile');
-  if (profileIdError) {
-    return res.status(400).json({ error: profileIdError });
+  const validationParams = [
+    {
+      value: getNormalizedId(req.query.profileId),
+      field: 'id',
+      type: 'profile',
+    },
+    {
+      value: req.params.categoryId,
+      field: 'id',
+      type: 'category',
+    },
+  ];
+  for (const param of validationParams) {
+    const error = getValidationError(param.value, param.field, param.type);
+    if (error) {
+      return res.status(400).json({ error });
+    }
   }
+  const profileId = validationParams[0].value;
   const categoryId = req.params.categoryId;
-  const categoryIdError = getErrorIfIdInvalid(categoryId, 'category');
-  if (categoryIdError) {
-    return res.status(400).json({ error: categoryIdError });
-  }
   try {
     if (!(await checkProfileExists(profileId))) {
       return res
@@ -118,21 +140,32 @@ router.get('/:categoryId', async (req, res) => {
 });
 
 router.put('/:categoryId', async (req, res) => {
+  const validationParams = [
+    {
+      value: req.body.profileId,
+      field: 'id',
+      type: 'profile',
+    },
+    {
+      value: req.body.categoryName,
+      field: 'name',
+      type: 'category',
+    },
+    {
+      value: req.params.categoryId,
+      field: 'id',
+      type: 'category',
+    },
+  ];
+  for (const param of validationParams) {
+    const error = getValidationError(param.value, param.field, param.type);
+    if (error) {
+      return res.status(400).json({ error });
+    }
+  }
   const profileId = req.body.profileId;
-  const profileIdError = getErrorIfIdInvalid(profileId, 'profile');
-  if (profileIdError) {
-    return res.status(400).json({ error: profileIdError });
-  }
   const categoryName = req.body.categoryName;
-  const categoryNameError = getErrorIfNameInvalid(categoryName, 'category');
-  if (categoryNameError) {
-    return res.status(400).json({ error: categoryNameError });
-  }
   const categoryId = req.params.categoryId;
-  const categoryIdError = getErrorIfIdInvalid(categoryId, 'category');
-  if (categoryIdError) {
-    return res.status(400).json({ error: categoryIdError });
-  }
   try {
     await db.runPromise('BEGIN TRANSACTION;');
     if (!(await checkProfileExists(profileId))) {
@@ -178,19 +211,26 @@ router.put('/:categoryId', async (req, res) => {
 });
 
 router.delete('/:categoryId', async (req, res) => {
-  const rawProfileId = req.query.profileId;
-  const profileId = Array.isArray(rawProfileId)
-    ? rawProfileId[0]
-    : rawProfileId;
-  const profileIdError = getErrorIfIdInvalid(profileId, 'profile');
-  if (profileIdError) {
-    return res.status(400).json({ error: profileIdError });
+  const validationParams = [
+    {
+      value: getNormalizedId(req.query.profileId),
+      field: 'id',
+      type: 'profile',
+    },
+    {
+      value: req.params.categoryId,
+      field: 'id',
+      type: 'category',
+    },
+  ];
+  for (const param of validationParams) {
+    const error = getValidationError(param.value, param.field, param.type);
+    if (error) {
+      return res.status(400).json({ error });
+    }
   }
+  const profileId = validationParams[0].value;
   const categoryId = req.params.categoryId;
-  const categoryIdError = getErrorIfIdInvalid(categoryId, 'category');
-  if (categoryIdError) {
-    return res.status(400).json({ error: categoryIdError });
-  }
   try {
     await db.runPromise('BEGIN TRANSACTION;');
     if (!(await checkProfileExists(profileId))) {
