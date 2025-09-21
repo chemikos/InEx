@@ -186,6 +186,10 @@ function getValidationError(value, field, type) {
   return error;
 }
 
+function getNormalizedId(rawId) {
+  return Array.isArray(rawId) ? rawId[0] : rawId;
+}
+
 module.exports = {
   checkProfileExists,
   checkItemExists,
@@ -202,4 +206,5 @@ module.exports = {
   getErrorIfAmountInvalid,
   getErrorIfDateInvalid,
   getValidationError,
+  getNormalizedId,
 };
