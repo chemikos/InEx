@@ -36,6 +36,14 @@ async function checkLabelExists(labelId, profileId) {
   return !!labelExists;
 }
 
+async function checkExpenseExists(expenseId, profileId) {
+  const expenseExists = await db.getPromise(
+    'SELECT * FROM expenses WHERE id_expense = ? AND fk_profile = ?',
+    [expenseId, profileId],
+  );
+  return !!expenseExists;
+}
+
 function validateId(id) {
   const parsedId = Number(id);
   return (
@@ -122,6 +130,7 @@ function getErrorIfNameInvalid(name, name_type) {
     profile: 'profilu',
     item: 'pozycji',
     label: 'etykiety',
+    expense: 'wydatku',
   };
   const nameType = nameTypes[name_type];
   if (!nameType) {
@@ -136,11 +145,53 @@ function getErrorIfNameInvalid(name, name_type) {
   return null;
 }
 
+function getErrorIfAmountInvalid(amount) {
+  if (!amount) {
+    return 'Kwota jest wymagana.';
+  }
+  if (!validateAmount(amount)) {
+    return 'Kwota zawiera niepoprawne dane.';
+  }
+  return null;
+}
+
+function getErrorIfDateInvalid(date) {
+  if (!date) {
+    return 'Data jest wymagana.';
+  }
+  if (!validateDate(date)) {
+    return 'Data zawiera niepoprawne dane lub jest w przyszłości.';
+  }
+  return null;
+}
+
+function getValidationError(value, field, type) {
+  let error = 'null';
+  switch (field) {
+    case 'id':
+      error = getErrorIfIdInvalid(value, type);
+      break;
+    case 'name':
+      error = getErrorIfNameInvalid(value, type);
+      break;
+    case 'amount':
+      error = getErrorIfAmountInvalid(value);
+      break;
+    case 'date':
+      error = getErrorIfDateInvalid(value);
+      break;
+    default:
+      return 'Podany typ pola jest niepoprawny.';
+  }
+  return error;
+}
+
 module.exports = {
   checkProfileExists,
   checkItemExists,
   checkCategoryExists,
   checkLabelExists,
+  checkExpenseExists,
   validateId,
   validateName,
   validateAmount,
@@ -148,4 +199,7 @@ module.exports = {
   validateCollectionOf,
   getErrorIfIdInvalid,
   getErrorIfNameInvalid,
+  getErrorIfAmountInvalid,
+  getErrorIfDateInvalid,
+  getValidationError,
 };
