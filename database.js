@@ -7,7 +7,7 @@ const db = new sqlite3.Database('./InEx.db', (err) => {
 });
 
 db.serialize(() => {
-  // Tworzenie tabeli profili
+  // // Tworzenie tabeli profili
   // db.run(`
   //   CREATE TABLE IF NOT EXISTS profiles (
   //     id_profile INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -15,7 +15,7 @@ db.serialize(() => {
   //   )
   // `);
 
-  // Tworzenie tabeli kategorii z fk_profile
+  // // Tworzenie tabeli kategorii z fk_profile
   // db.run(`
   //   CREATE TABLE IF NOT EXISTS categories (
   //     id_category INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,7 +26,7 @@ db.serialize(() => {
   //   )
   // `);
 
-  // Tworzenie tabeli nazw wydatków z fk_profile
+  // // Tworzenie tabeli nazw wydatków z fk_profile
   // db.run(`
   //   CREATE TABLE IF NOT EXISTS items (
   //     id_item INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,17 +36,18 @@ db.serialize(() => {
   //   )
   // `);
 
-  // Tworzenie tabeli etykiet z fk_profile
+  // // Tworzenie tabeli etykiet z fk_profile
   // db.run(`
   //   CREATE TABLE IF NOT EXISTS labels (
   //     id_label INTEGER PRIMARY KEY AUTOINCREMENT,
   //     name TEXT NOT NULL,
   //     fk_profile INTEGER,
   //     FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
+  //     UNIQUE(name, fk_profile)
   //   )
   // `);
 
-  // Tworzenie tabeli wydatków z fk_profile
+  // // Tworzenie tabeli wydatków z fk_profile
   // db.run(`
   //   CREATE TABLE IF NOT EXISTS expenses (
   //     id_expense INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,7 +60,7 @@ db.serialize(() => {
   //   )
   // `);
 
-  // Tworzenie tabeli item_category
+  // // Tworzenie tabeli item_category
   // db.run(`
   //   CREATE TABLE IF NOT EXISTS item_category (
   //     fk_item INTEGER,
@@ -70,7 +71,7 @@ db.serialize(() => {
   //   )
   // `);
 
-  // Tworzenie tabeli item_label
+  // // Tworzenie tabeli item_label
   // db.run(`
   //   CREATE TABLE IF NOT EXISTS item_label (
   //     fk_item INTEGER,
@@ -80,19 +81,6 @@ db.serialize(() => {
   //     FOREIGN KEY (fk_label) REFERENCES labels(id_label)
   //   )
   // `);
-
-  // Wstawienie domyślnego profilu, jeśli tabela jest pusta
-  // db.get('SELECT id_profile FROM profiles LIMIT 1', (err, row) => {
-  //   if (!row) {
-  //     db.run('INSERT INTO profiles (name) VALUES (?)', ['Pierwszy'], function(err) {
-  //       if (err) {
-  //         console.error(err.message);
-  //       } else {
-  //         console.log(`Utworzono domyślny profil o ID: ${this.lastID}`);
-  //       }
-  //     });
-  //   }
-  // });
 
   console.log('Struktura bazy danych została utworzona.');
 });
