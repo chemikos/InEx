@@ -44,6 +44,32 @@ async function checkExpenseExists(expenseId, profileId) {
   return !!expenseExists;
 }
 
+async function checkCategoryNameExists(categoryName, profileId, categoryId) {
+  let categoryNameExists = false;
+  if (categoryId) {
+    categoryNameExists = await db.getPromise(
+      'SELECT * FROM categories WHERE name = ? AND fk_profile = ? AND id_category != ?',
+      [categoryName, profileId, categoryId],
+    );
+  } else {
+    categoryNameExists = await db.getPromise(
+      'SELECT * FROM categories WHERE name = ? AND fk_profile = ?',
+      [categoryName, profileId],
+    );
+  }
+  return !!categoryNameExists;
+}
+
+async function checkItemNameExists(itemName, profileId, itemId, categoryId) {
+  const itemNameExists = await db.getPromise(
+    `SELECT * FROM items i
+      JOIN item_category ic ON ic.fk_item = i.id_item
+      WHERE i.name = ? AND i.fk_profile = ? AND i.id_item != ? AND id_category = ?`,
+    [itemName, profileId, itemId, categoryId],
+  );
+  return !!itemNameExists;
+}
+
 function validateId(id) {
   const parsedId = Number(id);
   return (
@@ -105,11 +131,11 @@ function validateCollectionOf(collection, field_type) {
 
 function getErrorIfIdInvalid(id, id_type) {
   const idTypes = {
-    profile: 'profilu',
     category: 'kategorii',
+    expense: 'wydatku',
     item: 'pozycji',
     label: 'etykiety',
-    expense: 'wydatku',
+    profile: 'profilu',
   };
   const idType = idTypes[id_type];
   if (!idType) {
@@ -127,10 +153,10 @@ function getErrorIfIdInvalid(id, id_type) {
 function getErrorIfNameInvalid(name, name_type) {
   const nameTypes = {
     category: 'kategorii',
-    profile: 'profilu',
+    expense: 'wydatku',
     item: 'pozycji',
     label: 'etykiety',
-    expense: 'wydatku',
+    profile: 'profilu',
   };
   const nameType = nameTypes[name_type];
   if (!nameType) {
@@ -190,12 +216,24 @@ function getNormalizedId(rawId) {
   return Array.isArray(rawId) ? rawId[0] : rawId;
 }
 
+function getNormalizedValuesAndPushToParams(params, values, field, type) {
+  const normalizedValues = [...new Set(values || [])];
+  if (normalizedValues.length > 0) {
+    for (const value of normalizedValues) {
+      params.push({ value: value, field: field, type: type });
+    }
+  }
+  return normalizedValues;
+}
+
 module.exports = {
   checkProfileExists,
   checkItemExists,
   checkCategoryExists,
   checkLabelExists,
   checkExpenseExists,
+  checkCategoryNameExists,
+  checkItemNameExists,
   validateId,
   validateName,
   validateAmount,
@@ -207,4 +245,5 @@ module.exports = {
   getErrorIfDateInvalid,
   getValidationError,
   getNormalizedId,
+  getNormalizedValuesAndPushToParams,
 };
