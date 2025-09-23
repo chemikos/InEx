@@ -18,8 +18,23 @@ db.runPromise = function (...args) {
 
 const {
   checkProfileExists,
+  checkItemExists,
+  checkCategoryExists,
+  checkLabelExists,
+  checkExpenseExists,
+  checkCategoryNameExists,
+  validateId,
+  validateName,
+  validateAmount,
+  validateDate,
+  validateCollectionOf,
+  getErrorIfIdInvalid,
+  getErrorIfNameInvalid,
+  getErrorIfAmountInvalid,
+  getErrorIfDateInvalid,
   getValidationError,
   getNormalizedId,
+  getNormalizedValuesAndPushToParams,
 } = require('../helpers/helpers.js');
 
 router.post('/', async (req, res) => {
@@ -50,7 +65,13 @@ router.post('/', async (req, res) => {
         .status(404)
         .json({ message: 'Profil o podanym ID nie istnieje.' });
     }
-    const sql = 'INSERT INTO categories (name, fk_profile) VALUES (?,?)';
+    if (await checkCategoryNameExists(categoryName, profileId, null)) {
+      await db.runPromise('ROLLBACK;');
+      return res
+        .status(409)
+        .json({ error: 'Kategoria o tej nazwie już istnieje w tym profilu.' });
+    }
+    const sql = 'INSERT INTO categories (name, fk_profile) VALUES (?, ?)';
     const insertResult = await db.runPromise(sql, [categoryName, profileId]);
     await db.runPromise('COMMIT;');
     return res.status(201).json({
@@ -59,11 +80,6 @@ router.post('/', async (req, res) => {
     });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    if (err.message.includes('UNIQUE constraint failed')) {
-      return res
-        .status(409)
-        .json({ error: 'Kategoria o tej nazwie już istnieje w tym profilu.' });
-    }
     return res.status(500).json({ error: err.message });
   }
 });
@@ -174,14 +190,7 @@ router.put('/:categoryId', async (req, res) => {
         .status(404)
         .json({ message: 'Profil o podanym ID nie istnieje.' });
     }
-    let sql =
-      'SELECT * FROM categories WHERE name = ? AND fk_profile = ? AND id_category != ?';
-    const existingCategory = await db.getPromise(sql, [
-      categoryName,
-      profileId,
-      categoryId,
-    ]);
-    if (existingCategory) {
+    if (await checkCategoryNameExists(categoryName, profileId, categoryId)) {
       await db.runPromise('ROLLBACK;');
       return res
         .status(409)

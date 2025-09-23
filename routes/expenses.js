@@ -19,8 +19,22 @@ db.runPromise = function (...args) {
 const {
   checkProfileExists,
   checkItemExists,
+  checkCategoryExists,
+  checkLabelExists,
   checkExpenseExists,
+  checkCategoryNameExists,
+  validateId,
+  validateName,
+  validateAmount,
+  validateDate,
+  validateCollectionOf,
+  getErrorIfIdInvalid,
+  getErrorIfNameInvalid,
+  getErrorIfAmountInvalid,
+  getErrorIfDateInvalid,
+  getValidationError,
   getNormalizedId,
+  getNormalizedValuesAndPushToParams,
 } = require('../helpers/helpers.js');
 
 router.post('/', async (req, res) => {
@@ -83,6 +97,12 @@ router.post('/', async (req, res) => {
 });
 
 router.get('/', async (req, res) => {
+  // do zrobienia
+  // data od + data do
+  // categoryId
+  // itemId
+  // labelId
+  // AND + OR
   const validationParams = [
     {
       value: getNormalizedId(req.query.profileId),
@@ -112,19 +132,13 @@ router.get('/', async (req, res) => {
         i.name AS item_name,
         c.name AS category_name,
         GROUP_CONCAT(l.name) AS labels
-      FROM
-        expenses e
-      JOIN
-        items i ON e.fk_item = i.id_item
-      JOIN
-        item_category ic ON i.id_item = ic.fk_item
-      JOIN
-        category c ON ic.fk_category = c.id_category
-      LEFT JOIN
-        item_label il ON i.id_item = il.fk_item
-      LEFT JOIN
-        labels l ON il.fk_label = l.id_label
-      WHERE
+      FROM expenses e
+      JOIN items i ON e.fk_item = i.id_item
+      JOIN item_category ic ON i.id_item = ic.fk_item
+      JOIN category c ON ic.fk_category = c.id_category
+      LEFT JOIN item_label il ON i.id_item = il.fk_item
+      LEFT JOIN labels l ON il.fk_label = l.id_label
+      WHERE 
         e.fk_profile = ?
       GROUP BY
         e.id_expense
@@ -177,18 +191,12 @@ router.get('/:expenseId', async (req, res) => {
             c.name AS category_name,
             GROUP_CONCAT(l.name) AS labels,
             GROUP_CONCAT(l.id_label) AS label_ids
-          FROM
-            expenses e
-          JOIN
-            items i ON e.fk_item = i.id_item
-          JOIN
-            item_category ic ON i.id_item = ic.fk_item
-          JOIN
-            category c ON ic.fk_category = c.id_category
-          LEFT JOIN
-            item_label il ON i.id_item = il.fk_item
-          LEFT JOIN
-            labels l ON il.fk_label = l.id_label
+          FROM expenses e
+          JOIN items i ON e.fk_item = i.id_item
+          JOIN item_category ic ON i.id_item = ic.fk_item
+          JOIN category c ON ic.fk_category = c.id_category
+          LEFT JOIN item_label il ON i.id_item = il.fk_item
+          LEFT JOIN labels l ON il.fk_label = l.id_label
           WHERE
             e.id_expense = ? AND e.fk_profile = ?
           GROUP BY
