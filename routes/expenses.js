@@ -23,6 +23,8 @@ const {
   checkLabelExists,
   checkExpenseExists,
   checkCategoryNameExists,
+  checkItemNameExists,
+  checkCategoryLabelExists,
   validateId,
   validateName,
   validateAmount,

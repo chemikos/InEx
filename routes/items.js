@@ -24,6 +24,7 @@ const {
   checkExpenseExists,
   checkCategoryNameExists,
   checkItemNameExists,
+  checkCategoryLabelExists,
   validateId,
   validateName,
   validateAmount,
@@ -87,7 +88,7 @@ router.post('/', async (req, res) => {
       for (const labelId of labelIds) {
         if (!(await checkLabelExists(labelId, profileId))) {
           await db.runPromise('ROLLBACK;');
-          return res.status(400).json({
+          return res.status(404).json({
             error: `Etykieta o ID ${labelId} nie istnieje w tym profilu.`,
           });
         }
@@ -288,7 +289,7 @@ router.put('/:itemId', async (req, res) => {
       for (const labelId of labelIds) {
         if (!(await checkLabelExists(labelId, profileId))) {
           await db.runPromise('ROLLBACK;');
-          return res.status(409).json({
+          return res.status(404).json({
             error: `Etykieta o tym ID (${labelId}) nie istnieje w tym profilu.`,
           });
         }
