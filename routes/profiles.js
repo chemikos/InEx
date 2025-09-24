@@ -18,26 +18,8 @@ db.runPromise = function (...args) {
 
 const {
   checkProfileExists,
-  checkItemExists,
-  checkCategoryExists,
-  checkLabelExists,
-  checkExpenseExists,
-  checkCategoryNameExists,
-  checkItemNameExists,
-  checkLabelNameExists,
   checkProfileNameExists,
-  validateId,
-  validateName,
-  validateAmount,
-  validateDate,
-  validateCollectionOf,
-  getErrorIfIdInvalid,
-  getErrorIfNameInvalid,
-  getErrorIfAmountInvalid,
-  getErrorIfDateInvalid,
   getValidationError,
-  getNormalizedId,
-  getNormalizedValuesAndPushToParams,
 } = require('../helpers/helpers.js');
 
 router.post('/', async (req, res) => {

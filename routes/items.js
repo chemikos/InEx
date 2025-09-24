@@ -21,19 +21,7 @@ const {
   checkItemExists,
   checkCategoryExists,
   checkLabelExists,
-  checkExpenseExists,
-  checkCategoryNameExists,
   checkItemNameExists,
-  checkCategoryLabelExists,
-  validateId,
-  validateName,
-  validateAmount,
-  validateDate,
-  validateCollectionOf,
-  getErrorIfIdInvalid,
-  getErrorIfNameInvalid,
-  getErrorIfAmountInvalid,
-  getErrorIfDateInvalid,
   getValidationError,
   getNormalizedId,
   getNormalizedValuesAndPushToParams,
@@ -130,8 +118,6 @@ router.post('/', async (req, res) => {
 });
 
 router.get('/', async (req, res) => {
-  // do zrobienia
-  // NOT IN
   const validationParams = [
     {
       value: getNormalizedId(req.query.profileId),
@@ -147,9 +133,15 @@ router.get('/', async (req, res) => {
   );
   const categoryIds = getNormalizedValuesAndPushToParams(
     validationParams,
-    register.query.categoryId,
+    req.query.categoryId,
     'id',
     'category',
+  );
+  const itemIds = getNormalizedValuesAndPushToParams(
+    validationParams,
+    req.query.itemId,
+    'id',
+    'item',
   );
   for (const param of validationParams) {
     const error = getValidationError(param.value, param.field, param.type);
@@ -183,6 +175,11 @@ router.get('/', async (req, res) => {
       sql += ` WHERE i.fk_profile = ? AND (${whereClauses.join(' OR ')})`;
     } else {
       sql += ` WHERE i.fk_profile = ?`;
+    }
+    if (itemIds.length > 0) {
+      const placeholders = new Array(itemIds.length).fill('?').join(', ');
+      sql += `AND i.id_item IN (${placeholders})`;
+      params.push(...itemIds);
     }
     sql += ` ORDER BY i.name`;
     const resultItems = await db.allPromise(sql, params);
