@@ -18,25 +18,9 @@ db.runPromise = function (...args) {
 
 const {
   checkProfileExists,
-  checkItemExists,
-  checkCategoryExists,
-  checkLabelExists,
-  checkExpenseExists,
-  checkCategoryNameExists,
-  checkItemNameExists,
   checkLabelNameExists,
-  validateId,
-  validateName,
-  validateAmount,
-  validateDate,
-  validateCollectionOf,
-  getErrorIfIdInvalid,
-  getErrorIfNameInvalid,
-  getErrorIfAmountInvalid,
-  getErrorIfDateInvalid,
   getValidationError,
   getNormalizedId,
-  getNormalizedValuesAndPushToParams,
 } = require('../helpers/helpers.js');
 
 router.post('/', async (req, res) => {
@@ -94,6 +78,18 @@ router.get('/', async (req, res) => {
       type: 'profile',
     },
   ];
+  const itemIds = getNormalizedValuesAndPushToParams(
+    validationParams,
+    req.query.itemId,
+    'id',
+    'item',
+  );
+  const labelIds = getNormalizedValuesAndPushToParams(
+    validationParams,
+    req.query.labelId,
+    'id',
+    'label',
+  );
   for (const param of validationParams) {
     const error = getValidationError(param.value, param.field, param.type);
     if (error) {
@@ -107,9 +103,27 @@ router.get('/', async (req, res) => {
         .status(404)
         .json({ message: 'Profil o podanym ID nie istnieje.' });
     }
-    const sql =
-      'SELECT id_label, name, fk_profile FROM labels WHERE fk_profile = ? ORDER BY name';
-    const resultLabels = await db.allPromise(sql, [profileId]);
+    const params = [profileId];
+    const whereClauses = [];
+    let sql = 'SELECT DISTINCT l.id_label, l.name, l.fk_profile FROM labels l';
+    if (itemIds.length > 0) {
+      sql += ' JOIN item_label il ON l.id_label = il.fk_label';
+      const placeholders = new Array(itemIds.length).fill('?').join(', ');
+      whereClauses.push(`il.fk_item IN (${placeholders})`);
+      params.push(...itemIds);
+    }
+    if (labelIds.length > 0) {
+      const placeholders = new Array(labelIds.length).fill('?').join(', ');
+      whereClauses.push(`l.id_label IN (${placeholders})`);
+      params.push(...labelIds);
+    }
+    if (whereClauses.length > 0) {
+      sql += ` WHERE l.fk_profile = ? AND (${whereClauses.join(' AND ')})`;
+    } else {
+      sql += ` WHERE l.fk_profile = ?`;
+    }
+    sql += ' ORDER BY l.name';
+    const resultLabels = await db.allPromise(sql, params);
     return res.status(200).json(resultLabels);
   } catch (err) {
     return res.status(500).json({ error: err.message });
