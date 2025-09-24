@@ -143,8 +143,7 @@ router.get('/:labelId', async (req, res) => {
         .status(404)
         .json({ message: 'Profil o podanym ID nie istnieje.' });
     }
-    const sql =
-      'SELECT id_label, name, fk_profile FROM labels WHERE id_label = ? AND fk_profile = ?';
+    const sql = 'SELECT * FROM labels WHERE id_label = ? AND fk_profile = ?';
     const resultLabel = await db.getPromise(sql, [labelId, profileId]);
     if (!resultLabel) {
       return res.status(404).json({

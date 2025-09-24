@@ -86,6 +86,22 @@ async function checkLabelNameExists(labelName, profileId, labelId) {
   return !!labelNameExists;
 }
 
+async function checkProfileNameExists(profileName, profileId) {
+  let profileNameExists = false;
+  if (profileId) {
+    profileNameExists = await db.getPromise(
+      'SELECT * FROM profiles WHERE name = ? AND fk_profile != ?',
+      [profileName, profileId],
+    );
+  } else {
+    profileNameExists = await db.getPromise(
+      'SELECT * FROM profiles WHERE name = ?',
+      [profileName],
+    );
+  }
+  return !!profileNameExists;
+}
+
 function validateId(id) {
   const parsedId = Number(id);
   return (
@@ -251,6 +267,7 @@ module.exports = {
   checkCategoryNameExists,
   checkItemNameExists,
   checkLabelNameExists,
+  checkProfileNameExists,
   validateId,
   validateName,
   validateAmount,
