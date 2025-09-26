@@ -19,24 +19,9 @@ db.runPromise = function (...args) {
 const {
   checkProfileExists,
   checkItemExists,
-  checkCategoryExists,
-  checkLabelExists,
   checkExpenseExists,
-  checkCategoryNameExists,
-  checkItemNameExists,
-  checkCategoryLabelExists,
-  validateId,
-  validateName,
-  validateAmount,
-  validateDate,
-  validateCollectionOf,
-  getErrorIfIdInvalid,
-  getErrorIfNameInvalid,
-  getErrorIfAmountInvalid,
-  getErrorIfDateInvalid,
   getValidationError,
   getNormalizedId,
-  getNormalizedValuesAndPushToParams,
 } = require('../helpers/helpers.js');
 
 router.post('/', async (req, res) => {
@@ -99,12 +84,6 @@ router.post('/', async (req, res) => {
 });
 
 router.get('/', async (req, res) => {
-  // do zrobienia
-  // data od + data do
-  // categoryId
-  // itemId
-  // labelId
-  // AND + OR
   const validationParams = [
     {
       value: getNormalizedId(req.query.profileId),
@@ -112,6 +91,24 @@ router.get('/', async (req, res) => {
       type: 'profile',
     },
   ];
+  const labelIds = getNormalizedValuesAndPushToParams(
+    validationParams,
+    req.query.labelId,
+    'id',
+    'label',
+  );
+  const categoryIds = getNormalizedValuesAndPushToParams(
+    validationParams,
+    req.query.categoryId,
+    'id',
+    'category',
+  );
+  const itemIds = getNormalizedValuesAndPushToParams(
+    validationParams,
+    req.query.itemId,
+    'id',
+    'item',
+  );
   for (const param of validationParams) {
     const error = getValidationError(param.value, param.field, param.type);
     if (error) {
@@ -119,35 +116,62 @@ router.get('/', async (req, res) => {
     }
   }
   const profileId = validationParams[0].value;
+  const dateFrom = req.query.dateFrom || '2020-02-10';
+  const dateTo = req.query.dateTo || new Date().toISOString().slice(0, 10);
+  if (req.query.dateFrom && !validateDate(dateFrom)) {
+    return res
+      .status(400)
+      .json({ error: 'Data początkowa zawiera niepoprawne dane.' });
+  }
+  if (req.query.dateTo && !validateDate(dateTo)) {
+    return res
+      .status(400)
+      .json({ error: 'Data końcowa zawiera niepoprawne dane.' });
+  }
   try {
     if (!(await checkProfileExists(profileId))) {
       return res
         .status(404)
         .json({ message: 'Profil o podanym ID nie istnieje.' });
     }
-    const sql = `
+    const params = [dateFrom, dateTo, profileId];
+    const whereClauses = [];
+    let sql = `
       SELECT
-        e.id_expense,
-        e.amount,
-        e.date,
-        e.fk_profile,
-        i.name AS item_name,
         c.name AS category_name,
-        GROUP_CONCAT(l.name) AS labels
+        i.name AS item_name,
+        SUM(e.amount)
       FROM expenses e
       JOIN items i ON e.fk_item = i.id_item
       JOIN item_category ic ON i.id_item = ic.fk_item
-      JOIN category c ON ic.fk_category = c.id_category
+      JOIN categories c ON ic.fk_category = c.id_category
       LEFT JOIN item_label il ON i.id_item = il.fk_item
       LEFT JOIN labels l ON il.fk_label = l.id_label
       WHERE 
-        e.fk_profile = ?
-      GROUP BY
-        e.id_expense
+       e.date BETWEEN ? AND ? AND i.fk_profile = ?`;
+    if (categoryIds.length > 0) {
+      const placeholders = new Array(categoryIds.length).fill('?').join(', ');
+      whereClauses.push(`ic.fk_category IN (${placeholders})`);
+      params.push(...categoryIds);
+    }
+    if (labelIds.length > 0) {
+      const placeholders = new Array(labelIds.length).fill('?').join(', ');
+      whereClauses.push(`il.fk_label IN (${placeholders})`);
+      params.push(...labelIds);
+    }
+    if (whereClauses.length > 0) {
+      sql += ` AND (${whereClauses.join(' OR ')})`;
+    }
+    if (itemIds.length > 0) {
+      const placeholders = new Array(itemIds.length).fill('?').join(', ');
+      sql += ` AND i.id_item IN (${placeholders})`;
+      params.push(...itemIds);
+    }
+    sql += ` GROUP BY
+        e.fk_item
       ORDER BY
-        e.date DESC
-    `;
-    const resultExpenses = await db.allPromise(sql, [profileId]);
+        c.name`;
+    const resultExpenses = await db.allPromise(sql, params);
     return res.status(200).json(resultExpenses);
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -196,7 +220,7 @@ router.get('/:expenseId', async (req, res) => {
           FROM expenses e
           JOIN items i ON e.fk_item = i.id_item
           JOIN item_category ic ON i.id_item = ic.fk_item
-          JOIN category c ON ic.fk_category = c.id_category
+          JOIN categories c ON ic.fk_category = c.id_category
           LEFT JOIN item_label il ON i.id_item = il.fk_item
           LEFT JOIN labels l ON il.fk_label = l.id_label
           WHERE

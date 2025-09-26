@@ -248,6 +248,10 @@ function getNormalizedId(rawId) {
   return Array.isArray(rawId) ? rawId[0] : rawId;
 }
 
+function getNormalizedDate(rawDate) {
+  return Array.isArray(rawDate) ? rawDate[0] : rawDate;
+}
+
 function getNormalizedValuesAndPushToParams(params, values, field, type) {
   const normalizedValues = [...new Set(values || [])];
   if (normalizedValues.length > 0) {
@@ -279,5 +283,6 @@ module.exports = {
   getErrorIfDateInvalid,
   getValidationError,
   getNormalizedId,
+  getNormalizedDate,
   getNormalizedValuesAndPushToParams,
 };
