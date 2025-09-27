@@ -44,6 +44,22 @@ async function checkExpenseExists(expenseId, profileId) {
   return !!expenseExists;
 }
 
+async function checkSourceExists(sourceId, profileId) {
+  const sourceExists = await db.getPromise(
+    'SELECT * FROM sources WHERE id_source = ? AND fk_profile = ?',
+    [sourceId, profileId],
+  );
+  return !!sourceExists;
+}
+
+async function checkIncomeExists(incomeId, profileId) {
+  const incomeExists = await db.getPromise(
+    'SELECT * FROM incomes WHERE id_income = ? AND fk_profile = ?',
+    [incomeId, profileId],
+  );
+  return !!incomeExists;
+}
+
 async function checkCategoryNameExists(categoryName, profileId, categoryId) {
   let categoryNameExists = false;
   if (categoryId) {
@@ -195,6 +211,7 @@ function getErrorIfIdInvalid(id, id_type) {
     label: 'etykiety',
     profile: 'profilu',
     source: 'typu dochodu',
+    income: 'wpłaty',
   };
   const idType = idTypes[id_type];
   if (!idType) {
@@ -217,6 +234,7 @@ function getErrorIfNameInvalid(name, name_type) {
     label: 'etykiety',
     profile: 'profilu',
     source: 'typu dochodu',
+    income: 'wpłaty',
   };
   const nameType = nameTypes[name_type];
   if (!nameType) {
@@ -296,6 +314,8 @@ module.exports = {
   checkCategoryExists,
   checkLabelExists,
   checkExpenseExists,
+  checkSourceExists,
+  checkIncomeExists,
   checkCategoryNameExists,
   checkItemNameExists,
   checkLabelNameExists,
