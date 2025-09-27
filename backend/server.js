@@ -2,6 +2,8 @@ const express = require('express');
 const app = express();
 const port = 3000;
 
+const cors = require('cors');
+
 const categoriesRouter = require('./routes/categories');
 const expensesRouter = require('./routes/expenses');
 const incomesRouter = require('./routes/incomes');
@@ -9,6 +11,12 @@ const itemsRouter = require('./routes/items');
 const labelsRouter = require('./routes/labels');
 const profilesRouter = require('./routes/profiles');
 const sourcesRouter = require('./routes/sources');
+
+app.use(
+  cors({
+    origin: 'http://localhost:5173', // ZMIEŃ PORT, JEŚLI VITE/CRA UŻYJE INNEGO
+  })
+); 
 
 app.use(express.json());
 
