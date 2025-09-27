@@ -1,6 +1,6 @@
-node_modules/
-sql/
-db/
+backend/node_modules/
+backend/sql/
+backend/db/
 
 .eslintrc.json
 .prettierrc.json
