@@ -1,5 +1,5 @@
 const util = require('util');
-const db = require('./database');
+const db = require('../database');
 
 db.getPromise = util.promisify(db.get);
 db.allPromise = util.promisify(db.all);

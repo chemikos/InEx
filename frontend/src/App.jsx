@@ -1,35 +1,35 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// /frontend/src/App.jsx
+
+import React from "react";
+import ProfileManager from "./components/ProfileManager";
+import { useProfile } from "./hooks/useProfile";
+// Możemy już użyć hooka useProfile, żeby sprawdzić stan
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { isProfileSelected, currentProfileName } = useProfile();
 
+  if (!isProfileSelected) {
+    // Jeśli nie wybrano profilu, wyświetlamy manager profili
+    return <ProfileManager />;
+  }
+
+  // Jeśli wybrano profil, wyświetlamy główny interfejs (Dashboard)
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
+    <div>
+      <h1>Witaj w InEx!</h1>
+      <p>
+        Aktywny profil: <strong>{currentProfileName}</strong>
       </p>
-    </>
-  )
+      {/* Tutaj będziesz dodawał komponenty routingowe: Wydatki, Wpłaty, Raporty */}
+      <nav>
+        {/* Przykładowa nawigacja */}
+        <button>Dashboard</button>
+        <button>Wydatki</button>
+        <button>Słowniki</button>
+      </nav>
+      {/* ... główna treść aplikacji ... */}
+    </div>
+  );
 }
 
-export default App
+export default App;
