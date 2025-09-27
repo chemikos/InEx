@@ -53,11 +53,9 @@ router.post('/', async (req, res) => {
     }
     if (await checkSourceNameExists(sourceName, profileId, null)) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(409)
-        .json({
-          error: 'Typ dochodu o tej nazwie już istnieje w tym profilu.',
-        });
+      return res.status(409).json({
+        error: 'Typ dochodu o tej nazwie już istnieje w tym profilu.',
+      });
     }
     const sql = 'INSERT INTO sources (name, fk_profile) VALUES (?, ?)';
     const insertResult = await db.runPromise(sql, [sourceName, profileId]);
