@@ -60,14 +60,24 @@ async function checkCategoryNameExists(categoryName, profileId, categoryId) {
   return !!categoryNameExists;
 }
 
-async function checkItemNameExists(itemName, profileId, itemId, categoryId) {
-  const itemNameExists = await db.getPromise(
-    `SELECT * FROM items i
+async function checkItemNameExists(itemName, profileId, categoryId, itemId) {
+  let itemNameExists = false;
+  if (itemId) {
+    itemNameExists = await db.getPromise(
+      `SELECT * FROM items i
       JOIN item_category ic ON ic.fk_item = i.id_item
-      WHERE i.name = ? AND i.fk_profile = ? AND i.id_item != ? AND id_category = ?`,
-    [itemName, profileId, itemId, categoryId],
-  );
-  return !!itemNameExists;
+      WHERE i.name = ? AND i.fk_profile = ? AND i.id_item != ? AND ic.fk_category = ?`,
+      [itemName, profileId, itemId, categoryId],
+    );
+  } else {
+    itemNameExists = await db.getPromise(
+      `SELECT * FROM items i
+      JOIN item_category ic ON ic.fk_item = i.id_item
+      WHERE i.name = ? AND i.fk_profile = ? AND ic.fk_category = ?`,
+      [itemName, profileId, categoryId],
+    );
+    return !!itemNameExists;
+  }
 }
 
 async function checkLabelNameExists(labelName, profileId, labelId) {
@@ -100,6 +110,22 @@ async function checkProfileNameExists(profileName, profileId) {
     );
   }
   return !!profileNameExists;
+}
+
+async function checkSourceNameExists(sourceName, profileId, sourceId) {
+  let sourceNameExists = false;
+  if (sourceId) {
+    sourceNameExists = await db.getPromise(
+      'SELECT * FROM sources WHERE name = ? AND fk_profile = ? AND id_source != ?',
+      [sourceName, profileId, sourceId],
+    );
+  } else {
+    sourceNameExists = await db.getPromise(
+      'SELECT * FROM sources WHERE name = ? AND fk_profile = ?',
+      [sourceName, profileId],
+    );
+  }
+  return !!sourceNameExists;
 }
 
 function validateId(id) {
@@ -168,6 +194,7 @@ function getErrorIfIdInvalid(id, id_type) {
     item: 'pozycji',
     label: 'etykiety',
     profile: 'profilu',
+    source: 'typu dochodu',
   };
   const idType = idTypes[id_type];
   if (!idType) {
@@ -189,13 +216,14 @@ function getErrorIfNameInvalid(name, name_type) {
     item: 'pozycji',
     label: 'etykiety',
     profile: 'profilu',
+    source: 'typu dochodu',
   };
   const nameType = nameTypes[name_type];
   if (!nameType) {
     return 'Podany typ nazwy nie jest poprawny.';
   }
   if (!name) {
-    return `Nazwa ${nameType} jest wymagany.`;
+    return `Nazwa ${nameType} jest wymagana.`;
   }
   if (!validateName(name)) {
     return `Nazwa ${nameType} zawiera niepoprawne dane.`;
@@ -272,6 +300,7 @@ module.exports = {
   checkItemNameExists,
   checkLabelNameExists,
   checkProfileNameExists,
+  checkSourceNameExists,
   validateId,
   validateName,
   validateAmount,

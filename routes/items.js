@@ -72,6 +72,13 @@ router.post('/', async (req, res) => {
         message: 'Kategoria o podanym ID nie istnieje w tym profilu.',
       });
     }
+    if (await checkItemNameExists(itemName, profileId, categoryId, null)) {
+      await db.runPromise('ROLLBACK;');
+      return res.status(409).json({
+        error:
+          'Pozycja o tej nazwie już istnieje w tej kategorii w tym profilu.',
+      });
+    }
     if (labelIds.length > 0) {
       for (const labelId of labelIds) {
         if (!(await checkLabelExists(labelId, profileId))) {
@@ -292,7 +299,7 @@ router.put('/:itemId', async (req, res) => {
         }
       }
     }
-    if (await checkItemNameExists(itemName, profileId, itemId, categoryId)) {
+    if (await checkItemNameExists(itemName, profileId, categoryId, itemId)) {
       await db.runPromise('ROLLBACK;');
       return res.status(409).json({
         error:
