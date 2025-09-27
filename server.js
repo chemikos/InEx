@@ -4,7 +4,7 @@ const port = 3000;
 
 const categoriesRouter = require('./routes/categories');
 const expensesRouter = require('./routes/expenses');
-const incomesRouter = require('./roures/incomes');
+const incomesRouter = require('./routes/incomes');
 const itemsRouter = require('./routes/items');
 const labelsRouter = require('./routes/labels');
 const profilesRouter = require('./routes/profiles');

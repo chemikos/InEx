@@ -89,7 +89,7 @@ db.serialize(() => {
     fk_profile INTEGER NOT NULL,
     name TEXT NOT NULL,
     UNIQUE (fk_profile, name),
-    FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile) ON DELETE CASCADE
+    FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
 );
   `);
 
@@ -101,8 +101,8 @@ db.serialize(() => {
     amount REAL NOT NULL,
     date TEXT NOT NULL,
     fk_source INTEGER NOT NULL,
-    FOREIGN KEY (fk_source) REFERENCES sources(id_source) ON DELETE RESTRICT,
-    FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile) ON DELETE CASCADE
+    FOREIGN KEY (fk_source) REFERENCES sources(id_source),
+    FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
 );
   `);
 

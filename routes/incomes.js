@@ -258,9 +258,9 @@ router.put('/:incomeId', async (req, res) => {
         .json({ message: 'Typ dochodu o podanym ID nie istnieje.' });
     }
     const sql =
-      'UPDATE incomes SET amount = ?, date = ? WHERE id_income = ? AND fk_source = ? AND fk_profile = ?';
-    const values = [amount, date, incomeId, sourceId, profileId];
-    const updateResult = await db.runPromise(sql, values);
+      'UPDATE incomes SET amount = ?, date = ?, fk_source = ? WHERE id_income = ? AND fk_profile = ?';
+    const params = [amount, date, sourceId, incomeId, profileId];
+    const updateResult = await db.runPromise(sql, params);
     if (updateResult.changes === 0) {
       await db.runPromise('ROLLBACK;');
       return res.status(404).json({
