@@ -64,54 +64,46 @@ const ProfileManager = () => {
   if (error) return <p style={{ color: "red" }}>Błąd: {error}</p>;
 
   return (
-    <div
-      style={{
-        maxWidth: "400px",
-        margin: "20px auto",
-        padding: "20px",
-        border: "1px solid #ccc",
-      }}
-    >
+    // Zastępujemy style atrybutem class
+    <div className="card" style={{ maxWidth: "400px", margin: "20px auto" }}>
       <h2>Wybierz lub utwórz profil</h2>
 
       {/* Lista istniejących profili */}
-      <ul style={{ listStyle: "none", padding: 0 }}>
+      <ul className="profile-list">
         {profiles.map((profile) => (
           <li
             key={profile.id_profile}
             onClick={() => selectProfile(profile.id_profile, profile.name)}
-            style={{
-              cursor: "pointer",
-              padding: "10px",
-              margin: "5px 0",
-              backgroundColor:
-                currentProfileId == profile.id_profile ? "#d4edda" : "#f8f9fa",
-              border: "1px solid #ced4da",
-              borderRadius: "4px",
-            }}
+            // Używamy dynamicznej klasy 'active'
+            className={`profile-item ${
+              currentProfileId == profile.id_profile ? "active" : ""
+            }`}
           >
             {profile.name}
-            {currentProfileId == profile.id_profile && (
-              <strong> (Aktywny)</strong>
-            )}
+            {currentProfileId == profile.id_profile && <span> (Aktywny)</span>}
           </li>
         ))}
       </ul>
 
-      <hr />
+      <hr
+        style={{
+          border: "none",
+          borderTop: "1px solid #ced4da",
+          margin: "20px 0",
+        }}
+      />
 
       {/* Formularz dodawania nowego profilu */}
-      <form onSubmit={handleCreateProfile}>
+      <form onSubmit={handleCreateProfile} style={{ display: "flex" }}>
         <input
           type="text"
           value={newProfileName}
           onChange={(e) => setNewProfileName(e.target.value)}
           placeholder="Nazwa nowego profilu"
-          style={{ padding: "8px", width: "70%", marginRight: "10px" }}
+          // Usuwamy style, dodajemy style inline dla szerokości jeśli jest konieczna
+          style={{ flexGrow: 1, marginRight: "10px" }}
         />
-        <button type="submit" style={{ padding: "8px 15px" }}>
-          Dodaj
-        </button>
+        <button type="submit">Dodaj</button>
       </form>
     </div>
   );

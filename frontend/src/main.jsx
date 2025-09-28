@@ -1,16 +1,20 @@
-// /frontend/src/main.jsx (lub main.js, w zależności od szablonu Vite)
+// /frontend/src/main.jsx (lub main.js)
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom"; // <--- DODAJ IMPORT
 import App from "./App.jsx";
 import "./index.css";
-// Importujemy Provider
 import { ProfileProvider } from "./context/ProfileContext.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    {/* OWIJAMY CAŁĄ APLIKACJĘ W PROVIDER */}
-    <ProfileProvider>
-      <App />
-    </ProfileProvider>
+    <BrowserRouter>
+      {" "}
+      {/* <--- OWIJAMY CAŁĄ APLIKACJĘ */}
+      <ProfileProvider>
+        <App />
+      </ProfileProvider>
+    </BrowserRouter>{" "}
+    {/* <--- KONIEC OWIJANIA */}
   </React.StrictMode>
 );
