@@ -22,6 +22,7 @@ const {
   checkExpenseExists,
   getValidationError,
   getNormalizedId,
+  getNormalizedValuesAndPushToParams,
 } = require('../helpers/helpers.js');
 
 router.post('/', async (req, res) => {

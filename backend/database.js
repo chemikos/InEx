@@ -6,6 +6,19 @@ const db = new sqlite3.Database('db/InEx.db', (err) => {
   console.log('Połączono z bazą danych InEx.db.');
 });
 
+// // do utworzenia, zrobić też taką tabelę ale bez old
+//   db.run(`
+//       CREATE TABLE IF NOT EXISTS daily_summary_old (
+//         id_summary INTEGER PRIMARY KEY AUTOINCREMENT,
+//         fk_profile INTEGER NOT NULL,
+//         date TEXT NOT NULL,
+//         total_expense_amount REAL NOT NULL DEFAULT 0.0,
+//         average_daily_expense REAL NOT NULL DEFAULT 0.0,
+//         UNIQUE (fk_profile, date),
+//         FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
+//       )
+//     `);
+
 // db.run(`
 // -- Generowanie 50 pozycji (10 na kategorię)
 // INSERT INTO items (fk_profile, name) VALUES
@@ -88,107 +101,107 @@ const db = new sqlite3.Database('db/InEx.db', (err) => {
 // (1, 'Zdrowie');
 //   `);
 
-db.serialize(() => {
-  //   // Tworzenie tabeli profili
-  //   db.run(`
-  //     CREATE TABLE IF NOT EXISTS profiles (
-  //       id_profile INTEGER PRIMARY KEY AUTOINCREMENT,
-  //       name TEXT NOT NULL UNIQUE
-  //     )
-  //   `);
+// db.serialize(() => {
+//   // Tworzenie tabeli profili
+//   db.run(`
+//     CREATE TABLE IF NOT EXISTS profiles (
+//       id_profile INTEGER PRIMARY KEY AUTOINCREMENT,
+//       name TEXT NOT NULL UNIQUE
+//     )
+//   `);
 
-  //   // Tworzenie tabeli kategorii z fk_profile
-  //   db.run(`
-  //     CREATE TABLE IF NOT EXISTS categories (
-  //       id_category INTEGER PRIMARY KEY AUTOINCREMENT,
-  //       name TEXT NOT NULL,
-  //       fk_profile INTEGER,
-  //       FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile),
-  //       UNIQUE(name, fk_profile)
-  //     )
-  //   `);
+//   // Tworzenie tabeli kategorii z fk_profile
+//   db.run(`
+//     CREATE TABLE IF NOT EXISTS categories (
+//       id_category INTEGER PRIMARY KEY AUTOINCREMENT,
+//       name TEXT NOT NULL,
+//       fk_profile INTEGER,
+//       FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile),
+//       UNIQUE(name, fk_profile)
+//     )
+//   `);
 
-  //   // Tworzenie tabeli nazw wydatków z fk_profile
-  //   db.run(`
-  //     CREATE TABLE IF NOT EXISTS items (
-  //       id_item INTEGER PRIMARY KEY AUTOINCREMENT,
-  //       name TEXT NOT NULL,
-  //       fk_profile INTEGER,
-  //       FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
-  //     )
-  //   `);
+//   // Tworzenie tabeli nazw wydatków z fk_profile
+//   db.run(`
+//     CREATE TABLE IF NOT EXISTS items (
+//       id_item INTEGER PRIMARY KEY AUTOINCREMENT,
+//       name TEXT NOT NULL,
+//       fk_profile INTEGER,
+//       FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
+//     )
+//   `);
 
-  //   // Tworzenie tabeli etykiet z fk_profile
-  //   db.run(`
-  //     CREATE TABLE IF NOT EXISTS labels (
-  //       id_label INTEGER PRIMARY KEY AUTOINCREMENT,
-  //       name TEXT NOT NULL,
-  //       fk_profile INTEGER,
-  //       FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
-  //       UNIQUE(name, fk_profile)
-  //     )
-  //   `);
+//   // Tworzenie tabeli etykiet z fk_profile
+//   db.run(`
+//     CREATE TABLE IF NOT EXISTS labels (
+//       id_label INTEGER PRIMARY KEY AUTOINCREMENT,
+//       name TEXT NOT NULL,
+//       fk_profile INTEGER,
+//       FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
+//       UNIQUE(name, fk_profile)
+//     )
+//   `);
 
-  //   // Tworzenie tabeli wydatków z fk_profile
-  //   db.run(`
-  //     CREATE TABLE IF NOT EXISTS expenses (
-  //       id_expense INTEGER PRIMARY KEY AUTOINCREMENT,
-  //       fk_item INTEGER,
-  //       amount REAL NOT NULL,
-  //       date TEXT NOT NULL,
-  //       fk_profile INTEGER,
-  //       FOREIGN KEY (fk_item) REFERENCES items(id_item),
-  //       FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
-  //     )
-  //   `);
+//   // Tworzenie tabeli wydatków z fk_profile
+//   db.run(`
+//     CREATE TABLE IF NOT EXISTS expenses (
+//       id_expense INTEGER PRIMARY KEY AUTOINCREMENT,
+//       fk_item INTEGER,
+//       amount REAL NOT NULL,
+//       date TEXT NOT NULL,
+//       fk_profile INTEGER,
+//       FOREIGN KEY (fk_item) REFERENCES items(id_item),
+//       FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
+//     )
+//   `);
 
-  //   // Tworzenie tabeli item_category
-  //   db.run(`
-  //     CREATE TABLE IF NOT EXISTS item_category (
-  //       fk_item INTEGER,
-  //       fk_category INTEGER,
-  //       PRIMARY KEY (fk_item, fk_category),
-  //       FOREIGN KEY (fk_item) REFERENCES items(id_item),
-  //       FOREIGN KEY (fk_category) REFERENCES category(id_category)
-  //     )
-  //   `);
+//   // Tworzenie tabeli item_category
+//   db.run(`
+//     CREATE TABLE IF NOT EXISTS item_category (
+//       fk_item INTEGER,
+//       fk_category INTEGER,
+//       PRIMARY KEY (fk_item, fk_category),
+//       FOREIGN KEY (fk_item) REFERENCES items(id_item),
+//       FOREIGN KEY (fk_category) REFERENCES category(id_category)
+//     )
+//   `);
 
-  //   // Tworzenie tabeli item_label
-  //   db.run(`
-  //     CREATE TABLE IF NOT EXISTS item_label (
-  //       fk_item INTEGER,
-  //       fk_label INTEGER,
-  //       PRIMARY KEY (fk_item, fk_label),
-  //       FOREIGN KEY (fk_item) REFERENCES items(id_item),
-  //       FOREIGN KEY (fk_label) REFERENCES labels(id_label)
-  //     )
-  //   `);
+//   // Tworzenie tabeli item_label
+//   db.run(`
+//     CREATE TABLE IF NOT EXISTS item_label (
+//       fk_item INTEGER,
+//       fk_label INTEGER,
+//       PRIMARY KEY (fk_item, fk_label),
+//       FOREIGN KEY (fk_item) REFERENCES items(id_item),
+//       FOREIGN KEY (fk_label) REFERENCES labels(id_label)
+//     )
+//   `);
 
-  //   // Tworzenie tabeli sources
-  //   db.run(`
-  //     CREATE TABLE sources (
-  //     id_source INTEGER PRIMARY KEY AUTOINCREMENT,
-  //     fk_profile INTEGER NOT NULL,
-  //     name TEXT NOT NULL,
-  //     UNIQUE (fk_profile, name),
-  //     FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
-  // );
-  //   `);
+//   // Tworzenie tabeli sources
+//   db.run(`
+//     CREATE TABLE sources (
+//     id_source INTEGER PRIMARY KEY AUTOINCREMENT,
+//     fk_profile INTEGER NOT NULL,
+//     name TEXT NOT NULL,
+//     UNIQUE (fk_profile, name),
+//     FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
+// );
+//   `);
 
-  //   // Tworzenie tabeli incomes
-  //   db.run(`
-  //     CREATE TABLE incomes (
-  //     id_income INTEGER PRIMARY KEY AUTOINCREMENT,
-  //     fk_profile INTEGER NOT NULL,
-  //     amount REAL NOT NULL,
-  //     date TEXT NOT NULL,
-  //     fk_source INTEGER NOT NULL,
-  //     FOREIGN KEY (fk_source) REFERENCES sources(id_source)
-  //     FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
-  // );
-  // `);
+//   // Tworzenie tabeli incomes
+//   db.run(`
+//     CREATE TABLE incomes (
+//     id_income INTEGER PRIMARY KEY AUTOINCREMENT,
+//     fk_profile INTEGER NOT NULL,
+//     amount REAL NOT NULL,
+//     date TEXT NOT NULL,
+//     fk_source INTEGER NOT NULL,
+//     FOREIGN KEY (fk_source) REFERENCES sources(id_source)
+//     FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
+// );
+// `);
 
-  console.log('Struktura bazy danych została utworzona.');
-});
+// console.log('Struktura bazy danych została utworzona.');
+// });
 
 module.exports = db;

@@ -21,6 +21,7 @@ const {
   checkLabelNameExists,
   getValidationError,
   getNormalizedId,
+  getNormalizedValuesAndPushToParams,
 } = require('../helpers/helpers.js');
 
 router.post('/', async (req, res) => {
