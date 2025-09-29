@@ -19,9 +19,28 @@ db.runPromise = function (...args) {
 const {
   checkProfileExists,
   checkItemExists,
+  checkCategoryExists,
+  checkLabelExists,
   checkExpenseExists,
+  checkSourceExists,
+  checkIncomeExists,
+  checkCategoryNameExists,
+  checkItemNameExists,
+  checkLabelNameExists,
+  checkProfileNameExists,
+  checkSourceNameExists,
+  validateId,
+  validateName,
+  validateAmount,
+  validateDate,
+  validateCollectionOf,
+  getErrorIfIdInvalid,
+  getErrorIfNameInvalid,
+  getErrorIfAmountInvalid,
+  getErrorIfDateInvalid,
   getValidationError,
   getNormalizedId,
+  getNormalizedDate,
   getNormalizedValuesAndPushToParams,
 } = require('../helpers/helpers.js');
 
@@ -139,9 +158,14 @@ router.get('/', async (req, res) => {
     const whereClauses = [];
     let sql = `
       SELECT
+        GROUP_CONCAT(DISTINCT e.id_expense) AS expense_ids,
         c.name AS category_name,
         i.name AS item_name,
-        SUM(e.amount)
+        SUM(e.amount) total_amount,
+        AVG(e.amount) average_amount,
+        COUNT(e.id_expense) number_of_expenses,
+        GROUP_CONCAT(DISTINCT l.name) AS labels,
+        GROUP_CONCAT(DISTINCT l.id_label) AS label_ids
       FROM expenses e
       JOIN items i ON e.fk_item = i.id_item
       JOIN item_category ic ON i.id_item = ic.fk_item

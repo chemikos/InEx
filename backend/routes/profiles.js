@@ -18,8 +18,30 @@ db.runPromise = function (...args) {
 
 const {
   checkProfileExists,
+  checkItemExists,
+  checkCategoryExists,
+  checkLabelExists,
+  checkExpenseExists,
+  checkSourceExists,
+  checkIncomeExists,
+  checkCategoryNameExists,
+  checkItemNameExists,
+  checkLabelNameExists,
   checkProfileNameExists,
+  checkSourceNameExists,
+  validateId,
+  validateName,
+  validateAmount,
+  validateDate,
+  validateCollectionOf,
+  getErrorIfIdInvalid,
+  getErrorIfNameInvalid,
+  getErrorIfAmountInvalid,
+  getErrorIfDateInvalid,
   getValidationError,
+  getNormalizedId,
+  getNormalizedDate,
+  getNormalizedValuesAndPushToParams,
 } = require('../helpers/helpers.js');
 
 router.post('/', async (req, res) => {
@@ -132,7 +154,7 @@ router.put('/:profileId', async (req, res) => {
       await db.runPromise('ROLLBACK;');
       return res
         .status(404)
-        .json({ error: 'Prifil o podanym ID nie istnieje.' });
+        .json({ error: 'Profil o podanym ID nie istnieje.' });
     }
     await db.runPromise('COMMIT;');
     return res
@@ -184,6 +206,7 @@ router.delete('/:profileId', async (req, res) => {
     }
     const sql = 'DELETE FROM profiles WHERE id_profile = ?';
     await db.runPromise(sql, [profileId]);
+    await db.runPromise('COMMIT;');
     return res.status(200).json({ message: 'Profil usunięty pomyślnie.' });
   } catch (err) {
     await db.runPromise('ROLLBACK;');

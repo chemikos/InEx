@@ -116,7 +116,7 @@ async function checkProfileNameExists(profileName, profileId) {
   let profileNameExists = false;
   if (profileId) {
     profileNameExists = await db.getPromise(
-      'SELECT * FROM profiles WHERE name = ? AND fk_profile != ?',
+      'SELECT * FROM profiles WHERE name = ? AND id_profile != ?',
       [profileName, profileId],
     );
   } else {
@@ -175,10 +175,21 @@ function validateDate(date) {
   if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return false;
   }
-  const d = new Date(date);
+  const parts = date.split('-');
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const day = parseInt(parts[2], 10);
+  const d = new Date(year, month - 1, day);
+  if (
+    d.getFullYear() !== year ||
+    d.getMonth() + 1 !== month ||
+    d.getDate() !== day
+  ) {
+    return false;
+  }
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  return !isNaN(d) && d.toISOString().slice(0, 10) === date && d <= today;
+  return d <= today;
 }
 
 function validateCollectionOf(collection, field_type) {
