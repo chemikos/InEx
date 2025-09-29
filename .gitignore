@@ -1,7 +1,6 @@
 
 ## Backend
 backend/node_modules/
-backend/sql/
 backend/db/
 
 backend/.eslintrc.json
@@ -36,5 +35,4 @@ frontend/*.sw?
 
 
 ###################
-opis.txt
-opis-front.txt
+ignored/
