@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { RouterView } from 'vue-router';
 // Importujemy bazowy styl, jeśli jest (np. dla Tailwind, jeśli używasz)
-import './assets/main.css'
+import './assets/main.css';
 </script>
 
 <template>

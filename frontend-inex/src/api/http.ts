@@ -1,7 +1,7 @@
 // src/api/http.ts
-import axios from 'axios'
+import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Stworzenie instancji Axios
 const http = axios.create({
@@ -9,6 +9,6 @@ const http = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-})
+});
 
-export default http
+export default http;

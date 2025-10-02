@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useIncomeStore } from '@/stores/incomeStore'
+import { useIncomeStore } from '@/stores/incomeStore';
 
-const incomeStore = useIncomeStore()
+const incomeStore = useIncomeStore();
 </script>
 
 <template>

@@ -1,44 +1,44 @@
 <script setup lang="ts">
-import ProfileSelector from '@/components/ProfileSelector.vue'
-import SourceList from '@/components/SourceList.vue' // NOWY IMPORT
-import IncomeList from '@/components/IncomeList.vue'
-import { useProfileStore } from '@/stores/profileStore'
-import { useSourceStore } from '@/stores/sourceStore' // NOWY IMPORT
-import { useIncomeStore } from '@/stores/incomeStore'
-import { watch, onMounted } from 'vue'
+import ProfileSelector from '@/components/ProfileSelector.vue';
+import SourceList from '@/components/SourceList.vue'; // NOWY IMPORT
+import IncomeList from '@/components/IncomeList.vue';
+import { useProfileStore } from '@/stores/profileStore';
+import { useSourceStore } from '@/stores/sourceStore'; // NOWY IMPORT
+import { useIncomeStore } from '@/stores/incomeStore';
+import { watch, onMounted } from 'vue';
 
-const profileStore = useProfileStore()
-const sourceStore = useSourceStore() // Użycie Store'a dla Źródeł
-const incomeStore = useIncomeStore()
+const profileStore = useProfileStore();
+const sourceStore = useSourceStore(); // Użycie Store'a dla Źródeł
+const incomeStore = useIncomeStore();
 
 // Funkcja ładowania danych dla aktywnego profilu (tylko Sources)
 const loadDataForProfile = (profileId: number | null) => {
   if (profileId !== null) {
-    console.log(`Dashboard: Ładowanie źródeł dochodów dla profilu ID: ${profileId}`)
+    console.log(`Dashboard: Ładowanie źródeł dochodów dla profilu ID: ${profileId}`);
     // Wywołujemy tylko fetchSources, bo to jedyne, co mamy
-    sourceStore.fetchSources(profileId)
-    incomeStore.fetchIncomes(profileId)
+    sourceStore.fetchSources(profileId);
+    incomeStore.fetchIncomes(profileId);
   } else {
-    sourceStore.sources = []
-    incomeStore.incomes = []
+    sourceStore.sources = [];
+    incomeStore.incomes = [];
   }
-}
+};
 
 // Reakcja na zmianę aktywnego ID profilu
 watch(
   () => profileStore.activeProfileId,
   (newId) => {
-    loadDataForProfile(newId)
+    loadDataForProfile(newId);
   },
   { immediate: true },
-)
+);
 
 // Upewnij się, że profile zostaną pobrane
 onMounted(() => {
   if (profileStore.allProfiles.length === 0) {
-    profileStore.fetchProfiles()
+    profileStore.fetchProfiles();
   }
-})
+});
 </script>
 
 <template>

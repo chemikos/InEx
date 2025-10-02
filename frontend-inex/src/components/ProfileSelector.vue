@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { useProfileStore } from '@/stores/profileStore'
-import { onMounted } from 'vue'
+import { useProfileStore } from '@/stores/profileStore';
+import { onMounted } from 'vue';
 // import { watch } from 'vue'
 
-const profileStore = useProfileStore()
+const profileStore = useProfileStore();
 
 // 1. Wywołujemy pobieranie profili przy pierwszym załadowaniu komponentu
 onMounted(() => {
-  profileStore.fetchProfiles()
-})
+  profileStore.fetchProfiles();
+});
 
 // 2. Obsługa zmiany wybranego profilu przez użytkownika
 const handleProfileChange = (event: Event) => {
-  const target = event.target as HTMLSelectElement
-  const newId = parseInt(target.value)
-  profileStore.setActiveProfile(newId)
-}
+  const target = event.target as HTMLSelectElement;
+  const newId = parseInt(target.value);
+  profileStore.setActiveProfile(newId);
+};
 </script>
 
 <template>

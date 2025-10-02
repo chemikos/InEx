@@ -1,5 +1,5 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import DashboardView from '@/views/DashboardView.vue'
+import { createRouter, createWebHistory } from 'vue-router';
+import DashboardView from '@/views/DashboardView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -19,6 +19,6 @@ const router = createRouter({
     //   component: () => import('../views/AboutView.vue')
     // }
   ],
-})
+});
 
-export default router
+export default router;

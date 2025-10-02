@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useSourceStore } from '@/stores/sourceStore'
+import { useSourceStore } from '@/stores/sourceStore';
 
-const sourceStore = useSourceStore()
+const sourceStore = useSourceStore();
 </script>
 
 <template>
