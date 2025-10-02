@@ -157,15 +157,16 @@ router.get('/', async (req, res) => {
     const params = [dateFrom, dateTo, profileId];
     const whereClauses = [];
     let sql = `
-      SELECT
-        GROUP_CONCAT(DISTINCT e.id_expense) AS expense_ids,
+      SELECT 
+        id_expense,
+        e.amount,
+        e.date,
         c.name AS category_name,
         i.name AS item_name,
-        SUM(e.amount) total_amount,
-        AVG(e.amount) average_amount,
-        COUNT(e.id_expense) number_of_expenses,
-        GROUP_CONCAT(DISTINCT l.name) AS labels,
-        GROUP_CONCAT(DISTINCT l.id_label) AS label_ids
+        i.id_item AS fk_item,
+        c.id_category AS fk_category,
+       GROUP_CONCAT(l.name) AS labels,
+       GROUP_CONCAT(l.id_label) AS label_ids
       FROM expenses e
       JOIN items i ON e.fk_item = i.id_item
       JOIN item_category ic ON i.id_item = ic.fk_item
@@ -192,12 +193,24 @@ router.get('/', async (req, res) => {
       sql += ` AND i.id_item IN (${placeholders})`;
       params.push(...itemIds);
     }
-    sql += ` GROUP BY
-        e.fk_item
-      ORDER BY
-        c.name`;
+    sql += ` GROUP BY e.id_expense
+      ORDER BY e.date, c.name, i.name`;
     const resultExpenses = await db.allPromise(sql, params);
-    return res.status(200).json(resultExpenses);
+
+    const processedExpenses = resultExpenses.map((expense) => {
+      return {
+        ...expense,
+        // Konwersja stringa etykiet na tablicę stringów
+        labels: expense.labels ? expense.labels.split(',') : [],
+
+        // Konwersja stringa ID etykiet na tablicę liczb
+        label_ids: expense.label_ids
+          ? expense.label_ids.split(',').map((id) => parseInt(id))
+          : [],
+      };
+    });
+
+    return res.status(200).json(processedExpenses);
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }

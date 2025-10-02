@@ -6,9 +6,9 @@ const db = new sqlite3.Database('db/InEx.db', (err) => {
   console.log('Połączono z bazą danych InEx.db.');
 });
 
-// // do utworzenia, zrobić też taką tabelę ale bez old
-//   db.run(`
-//       CREATE TABLE IF NOT EXISTS daily_summary_old (
+// //
+// db.run(`
+//       CREATE TABLE IF NOT EXISTS daily_summary (
 //         id_summary INTEGER PRIMARY KEY AUTOINCREMENT,
 //         fk_profile INTEGER NOT NULL,
 //         date TEXT NOT NULL,
@@ -201,7 +201,20 @@ const db = new sqlite3.Database('db/InEx.db', (err) => {
 // );
 // `);
 
-// console.log('Struktura bazy danych została utworzona.');
+//   // do utworzenia, zrobić też taką tabelę ale bez old
+//   db.run(`
+//       CREATE TABLE IF NOT EXISTS daily_summary (
+//         id_summary INTEGER PRIMARY KEY AUTOINCREMENT,
+//         fk_profile INTEGER NOT NULL,
+//         date TEXT NOT NULL,
+//         total_expense_amount REAL NOT NULL DEFAULT 0.0,
+//         average_daily_expense REAL NOT NULL DEFAULT 0.0,
+//         UNIQUE (fk_profile, date),
+//         FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
+//       )
+//     `);
+
+//   console.log('Struktura bazy danych została utworzona.');
 // });
 
 module.exports = db;

@@ -1,0 +1,150 @@
+/* src/assets/main.css */
+
+/* --- PODSTAWOWY RESET --- */
+body {
+  font-family: 'Arial', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f7f9fc; /* Bardzo jasne tło dla całej strony */
+  color: #333;
+  line-height: 1.6;
+}
+
+/* --- GŁÓWNY KONTENER --- */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* --- NAGŁÓWKI --- */
+h1 {
+  font-size: 2.25rem; /* 36px */
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #4a5568; /* Ciemny szary */
+}
+
+h2 {
+  font-size: 1.5rem; /* 24px */
+  font-weight: 600;
+  margin-top: 30px;
+  margin-bottom: 15px;
+  color: #2d3748; /* Bardzo ciemny szary */
+}
+
+/* --- STYLIZACJA WYBORU PROFILU (ProfileSelector) --- */
+.bg-gray-100 {
+  background-color: #f0f4f8; /* Jasne tło dla sekcji */
+}
+.shadow-sm {
+  box-shadow:
+    0 1px 3px 0 rgba(0, 0, 0, 0.1),
+    0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+.p-4 {
+  padding: 1rem;
+}
+
+.text-blue-600 {
+  color: #3182ce; /* Kolor profilu */
+}
+
+select {
+  padding: 10px;
+  border: 1px solid #cbd5e0;
+  border-radius: 0.25rem;
+  background-color: white;
+  box-sizing: border-box;
+}
+.w-full {
+  width: 100%;
+}
+
+/* --- WIDŻET SUMARYCZNY --- */
+.bg-indigo-100 {
+  background-color: #ebf4ff;
+}
+.text-red-600 {
+  color: #e53e3e;
+}
+
+/* --- STYLIZACJA TABELI WYDATKÓW --- */
+table {
+  width: 100%;
+  border-collapse: separate; /* Używamy separate, aby nadać border-radius */
+  border-spacing: 0;
+}
+
+.shadow-md {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.bg-gray-200 {
+  background-color: #edf2f7;
+}
+
+th,
+td {
+  padding: 12px 16px;
+  text-align: left;
+}
+
+th {
+  font-weight: 600;
+  color: #4a5568;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+tbody tr {
+  transition: background-color 0.15s ease-in-out;
+}
+
+tbody tr:hover {
+  background-color: #f7fafc;
+}
+
+.border-b {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Zaokrąglenie rogów tabeli */
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+.overflow-hidden {
+  overflow: hidden;
+}
+
+/* --- ETYKIETY (LABELS) --- */
+.bg-blue-100 {
+  background-color: #ebf8ff;
+}
+.text-blue-800 {
+  color: #2a4365;
+}
+.inline-block {
+  display: inline-block;
+}
+.rounded-full {
+  border-radius: 9999px;
+}
+.px-2\.5 {
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
+}
+.py-0\.5 {
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+}
+.mr-1 {
+  margin-right: 0.25rem;
+}
+.text-xs {
+  font-size: 0.75rem;
+}

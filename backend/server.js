@@ -15,8 +15,9 @@ const sourcesRouter = require('./routes/sources');
 app.use(
   cors({
     origin: 'http://localhost:5173', // ZMIEŃ PORT, JEŚLI VITE/CRA UŻYJE INNEGO
-  })
-); 
+    // origin: '*', // ZMIEŃ PORT, JEŚLI VITE/CRA UŻYJE INNEGO
+  }),
+);
 
 app.use(express.json());
 
