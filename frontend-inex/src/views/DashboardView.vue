@@ -1,15 +1,26 @@
 <script setup lang="ts">
 import ProfileSelector from '@/components/ProfileSelector.vue';
-import SourceList from '@/components/SourceList.vue'; // NOWY IMPORT
+import SourceList from '@/components/SourceList.vue';
 import IncomeList from '@/components/IncomeList.vue';
+import CategoryList from '@/components/CategoryList.vue';
+import LabelList from '@/components/LabelList.vue';
+import ExpenseList from '@/components/ExpenseList.vue';
+
 import { useProfileStore } from '@/stores/profileStore';
-import { useSourceStore } from '@/stores/sourceStore'; // NOWY IMPORT
+import { useSourceStore } from '@/stores/sourceStore';
 import { useIncomeStore } from '@/stores/incomeStore';
+import { useCategoryStore } from '@/stores/categoryStore';
+import { useLabelStore } from '@/stores/labelStore';
+import { useExpenseStore } from '@/stores/expenseStore';
+
 import { watch, onMounted } from 'vue';
 
 const profileStore = useProfileStore();
-const sourceStore = useSourceStore(); // Użycie Store'a dla Źródeł
+const sourceStore = useSourceStore();
 const incomeStore = useIncomeStore();
+const categoryStore = useCategoryStore();
+const labelStore = useLabelStore();
+const expenseStore = useExpenseStore();
 
 // Funkcja ładowania danych dla aktywnego profilu (tylko Sources)
 const loadDataForProfile = (profileId: number | null) => {
@@ -18,9 +29,15 @@ const loadDataForProfile = (profileId: number | null) => {
     // Wywołujemy tylko fetchSources, bo to jedyne, co mamy
     sourceStore.fetchSources(profileId);
     incomeStore.fetchIncomes(profileId);
+    categoryStore.fetchCategories(profileId);
+    labelStore.fetchLabels(profileId);
+    expenseStore.fetchExpenses(profileId);
   } else {
     sourceStore.sources = [];
     incomeStore.incomes = [];
+    categoryStore.categories = [];
+    labelStore.labels = [];
+    expenseStore.expenses = [];
   }
 };
 
@@ -54,6 +71,12 @@ onMounted(() => {
         <SourceList />
 
         <IncomeList />
+
+        <CategoryList />
+
+        <LabelList />
+
+        <ExpenseList />
       </div>
 
       <h2 class="text-2xl font-semibold mt-8 mb-4">Ostatnie Wydatki (W kolejnym kroku)</h2>
