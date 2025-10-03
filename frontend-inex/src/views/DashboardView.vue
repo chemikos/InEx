@@ -9,6 +9,7 @@ import ExpenseList from '@/components/ExpenseList.vue';
 
 import AddProfileForm from '@/components/AddProfileForm.vue';
 import AddSourceForm from '@/components/AddSourceForm.vue';
+import AddIncomeForm from '@/components/AddIncomeForm.vue';
 
 import { useProfileStore } from '@/stores/profileStore';
 import { useSourceStore } from '@/stores/sourceStore';
@@ -95,6 +96,8 @@ onMounted(() => {
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <AddSourceForm />
+
+        <AddIncomeForm />
         <!-- 
         <div class="p-8 border border-dashed text-gray-500 rounded-lg text-center bg-gray-50">
           Formularze dodawania Kategorii/Etykiet/Pozycji
