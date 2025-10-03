@@ -5,6 +5,7 @@ import IncomeList from '@/components/IncomeList.vue';
 import CategoryList from '@/components/CategoryList.vue';
 import LabelList from '@/components/LabelList.vue';
 import ExpenseList from '@/components/ExpenseList.vue';
+import ItemList from '@/components/ItemList.vue';
 
 import { useProfileStore } from '@/stores/profileStore';
 import { useSourceStore } from '@/stores/sourceStore';
@@ -12,6 +13,7 @@ import { useIncomeStore } from '@/stores/incomeStore';
 import { useCategoryStore } from '@/stores/categoryStore';
 import { useLabelStore } from '@/stores/labelStore';
 import { useExpenseStore } from '@/stores/expenseStore';
+import { useItemStore } from '@/stores/itemStore';
 
 import { watch, onMounted } from 'vue';
 
@@ -21,6 +23,7 @@ const incomeStore = useIncomeStore();
 const categoryStore = useCategoryStore();
 const labelStore = useLabelStore();
 const expenseStore = useExpenseStore();
+const itemStore = useItemStore();
 
 // Funkcja ładowania danych dla aktywnego profilu (tylko Sources)
 const loadDataForProfile = (profileId: number | null) => {
@@ -32,12 +35,14 @@ const loadDataForProfile = (profileId: number | null) => {
     categoryStore.fetchCategories(profileId);
     labelStore.fetchLabels(profileId);
     expenseStore.fetchExpenses(profileId);
+    itemStore.fetchItems(profileId);
   } else {
     sourceStore.sources = [];
     incomeStore.incomes = [];
     categoryStore.categories = [];
     labelStore.labels = [];
     expenseStore.expenses = [];
+    itemStore.items = [];
   }
 };
 
@@ -75,6 +80,8 @@ onMounted(() => {
         <CategoryList />
 
         <LabelList />
+
+        <ItemList />
 
         <ExpenseList />
       </div>

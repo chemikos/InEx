@@ -182,9 +182,11 @@ router.get('/', async (req, res) => {
     }
     const params = [profileId];
     const whereClauses = [];
-    let sql = 'SELECT DISTINCT i.id_item, i.name, i.fk_profile FROM items i';
+    let sql =
+      'SELECT DISTINCT i.id_item, i.name, i.fk_profile, GROUP_CONCAT(l.name) AS labels, GROUP_CONCAT(l.id_label) AS label_ids FROM items i';
     sql += ' LEFT JOIN item_category ic ON i.id_item = ic.fk_item';
     sql += ' LEFT JOIN item_label il ON i.id_item = il.fk_item';
+    sql += ' LEFT JOIN labels l ON il.fk_label = l.id_label';
     if (categoryIds.length > 0) {
       const placeholders = new Array(categoryIds.length).fill('?').join(', ');
       whereClauses.push(`ic.fk_category IN (${placeholders})`);
@@ -205,9 +207,23 @@ router.get('/', async (req, res) => {
       sql += `AND i.id_item IN (${placeholders})`;
       params.push(...itemIds);
     }
-    sql += ` ORDER BY i.name`;
+    sql += ` GROUP BY i.id_item ORDER BY i.name`;
     const resultItems = await db.allPromise(sql, params);
-    return res.status(200).json({ message: resultItems });
+
+    const processedItems = resultItems.map((item) => {
+      return {
+        ...item,
+        // Konwersja stringa etykiet na tablicę stringów
+        labels: item.labels ? item.labels.split(',') : [],
+
+        // Konwersja stringa ID etykiet na tablicę liczb
+        label_ids: item.label_ids
+          ? item.label_ids.split(',').map((id) => parseInt(id))
+          : [],
+      };
+    });
+
+    return res.status(200).json(processedItems);
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
