@@ -4,6 +4,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import http from '@/api/http';
 import router from '@/router';
+import { isAxiosError } from 'axios';
 
 // Definicja typu dla Profilu
 export interface Profile {
@@ -27,7 +28,6 @@ export const useProfileStore = defineStore('profile', () => {
       const response = await http.get('/profiles');
       allProfiles.value = response.data;
 
-      // Jeśli nie ma aktywnego ID, domyślnie ustawiamy pierwszy profil
       if (
         allProfiles.value.length > 0 &&
         activeProfileId.value === null &&
@@ -38,7 +38,6 @@ export const useProfileStore = defineStore('profile', () => {
       }
     } catch (error) {
       console.error('Błąd podczas pobierania profili:', error);
-      // Przekierowanie na stronę błędu/inicjalizacji, jeśli nie ma profili
       router.push({ name: 'error', params: { code: 'PROFILE_LOAD_FAIL' } });
     }
   }
@@ -51,7 +50,34 @@ export const useProfileStore = defineStore('profile', () => {
     }
   }
 
-  // Używamy tego w komponentach do sprawdzenia, czy profil jest gotowy
+  async function addProfile(profileName: string) {
+    // if (!profileName) throw new Error('Nazwa profilu nie może być pusta.');
+    try {
+      const response = await http.post('/profiles', {
+        profileName: profileName,
+      });
+      const data = response.data;
+      const newProfileId = data.profileId;
+      const successMessage = data.message;
+      const newProfile = {
+        id_profile: newProfileId,
+        name: profileName,
+      };
+      allProfiles.value.push(newProfile);
+      setActiveProfile(newProfileId);
+      console.log(`Pomyślnie dodano profil: ${newProfile.name}`);
+      return { profile: newProfile, message: successMessage };
+    } catch (error) {
+      let errorMessage: string = 'Nieznany błąd serwera. Sprawdź konsolę.';
+      if (isAxiosError(error)) {
+        errorMessage = error.response?.data?.error || `Błąd HTTP ${error.response?.status}.`;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      throw new Error(errorMessage);
+    }
+  }
+
   const isProfileLoaded = computed(() => activeProfileId.value !== null);
 
   return {
@@ -61,5 +87,6 @@ export const useProfileStore = defineStore('profile', () => {
     isProfileLoaded,
     fetchProfiles,
     setActiveProfile,
+    addProfile,
   };
 });

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ProfileSelector from '@/components/ProfileSelector.vue';
+import AddProfileForm from '@/components/AddProfileForm.vue';
 import SourceList from '@/components/SourceList.vue';
 import IncomeList from '@/components/IncomeList.vue';
 import CategoryList from '@/components/CategoryList.vue';
@@ -69,6 +70,7 @@ onMounted(() => {
 
     <ProfileSelector />
 
+    <AddProfileForm />
     <div v-if="profileStore.isProfileLoaded && profileStore.activeProfileId !== null">
       <h2 class="text-2xl font-semibold mt-8 mb-4">Przegląd</h2>
 
