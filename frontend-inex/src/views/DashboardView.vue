@@ -1,20 +1,22 @@
 <script setup lang="ts">
 import ProfileSelector from '@/components/ProfileSelector.vue';
-import AddProfileForm from '@/components/AddProfileForm.vue';
 import SourceList from '@/components/SourceList.vue';
 import IncomeList from '@/components/IncomeList.vue';
 import CategoryList from '@/components/CategoryList.vue';
 import LabelList from '@/components/LabelList.vue';
-import ExpenseList from '@/components/ExpenseList.vue';
 import ItemList from '@/components/ItemList.vue';
+import ExpenseList from '@/components/ExpenseList.vue';
+
+import AddProfileForm from '@/components/AddProfileForm.vue';
+import AddSourceForm from '@/components/AddSourceForm.vue';
 
 import { useProfileStore } from '@/stores/profileStore';
 import { useSourceStore } from '@/stores/sourceStore';
 import { useIncomeStore } from '@/stores/incomeStore';
 import { useCategoryStore } from '@/stores/categoryStore';
 import { useLabelStore } from '@/stores/labelStore';
-import { useExpenseStore } from '@/stores/expenseStore';
 import { useItemStore } from '@/stores/itemStore';
+import { useExpenseStore } from '@/stores/expenseStore';
 
 import { watch, onMounted } from 'vue';
 
@@ -87,11 +89,19 @@ onMounted(() => {
 
         <ExpenseList />
       </div>
+    </div>
+    <div v-if="profileStore.isProfileLoaded && profileStore.activeProfileId !== null">
+      <h2 class="text-2xl font-semibold mt-8 mb-4">Dodawanie Danych Słownikowych</h2>
 
-      <h2 class="text-2xl font-semibold mt-8 mb-4">Ostatnie Wydatki (W kolejnym kroku)</h2>
-      <div class="p-8 border border-dashed text-gray-500 rounded-lg text-center">
-        Tutaj pojawi się lista wydatków po zaimplementowaniu *expenseStore*.
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <AddSourceForm />
+        <!-- 
+        <div class="p-8 border border-dashed text-gray-500 rounded-lg text-center bg-gray-50">
+          Formularze dodawania Kategorii/Etykiet/Pozycji
+        </div> -->
       </div>
+
+      <!-- <h2 class="text-2xl font-semibold mt-8 mb-4">Przegląd Finansów i Struktura Danych</h2> -->
     </div>
     <div v-else-if="profileStore.allProfiles.length === 0 && profileStore.isProfileLoaded">
       <p class="text-xl text-red-500 mt-10">
