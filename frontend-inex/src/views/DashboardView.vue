@@ -10,6 +10,7 @@ import ExpenseList from '@/components/ExpenseList.vue';
 import AddProfileForm from '@/components/AddProfileForm.vue';
 import AddSourceForm from '@/components/AddSourceForm.vue';
 import AddIncomeForm from '@/components/AddIncomeForm.vue';
+import AddCategoryForm from '@/components/AddCategoryForm.vue';
 
 import { useProfileStore } from '@/stores/profileStore';
 import { useSourceStore } from '@/stores/sourceStore';
@@ -26,14 +27,12 @@ const sourceStore = useSourceStore();
 const incomeStore = useIncomeStore();
 const categoryStore = useCategoryStore();
 const labelStore = useLabelStore();
-const expenseStore = useExpenseStore();
 const itemStore = useItemStore();
+const expenseStore = useExpenseStore();
 
-// Funkcja ładowania danych dla aktywnego profilu (tylko Sources)
 const loadDataForProfile = (profileId: number | null) => {
   if (profileId !== null) {
     console.log(`Dashboard: Ładowanie źródeł dochodów dla profilu ID: ${profileId}`);
-    // Wywołujemy tylko fetchSources, bo to jedyne, co mamy
     sourceStore.fetchSources(profileId);
     incomeStore.fetchIncomes(profileId);
     categoryStore.fetchCategories(profileId);
@@ -98,6 +97,8 @@ onMounted(() => {
         <AddSourceForm />
 
         <AddIncomeForm />
+
+        <AddCategoryForm />
         <!-- 
         <div class="p-8 border border-dashed text-gray-500 rounded-lg text-center bg-gray-50">
           Formularze dodawania Kategorii/Etykiet/Pozycji
