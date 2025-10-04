@@ -13,6 +13,7 @@ import AddIncomeForm from '@/components/AddIncomeForm.vue';
 import AddCategoryForm from '@/components/AddCategoryForm.vue';
 import AddLabelForm from '@/components/AddLabelForm.vue';
 import AddItemForm from '@/components/AddItemForm.vue';
+import AddExpenseForm from '@/components/AddExpenseForm.vue';
 
 import { useProfileStore } from '@/stores/profileStore';
 import { useSourceStore } from '@/stores/sourceStore';
@@ -105,6 +106,8 @@ onMounted(() => {
         <AddLabelForm />
 
         <AddItemForm />
+
+        <AddExpenseForm />
         <!-- 
         <div class="p-8 border border-dashed text-gray-500 rounded-lg text-center bg-gray-50">
           Formularze dodawania Kategorii/Etykiet/Pozycji
