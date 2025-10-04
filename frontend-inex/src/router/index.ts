@@ -12,6 +12,15 @@ const router = createRouter({
       // 4. Przypisanie komponentu do tej ścieżki
       component: DashboardView,
     },
+    {
+      // NOWA TRASA DLA EDYCJI PROFILU
+      path: '/profiles/edit/:id',
+      name: 'profile-edit',
+      // Możesz stworzyć nowy plik np. ProfileEditView.vue
+      // component: () => import('@/views/DashboardView.vue'), // Używamy DashboardView jako placeholder
+      component: () => import('@/views/ProfileEditView.vue'),
+      props: true, // Przekazanie :id jako propsa
+    },
     // Dodaj inne trasy, jeśli będą potrzebne (np. dla strony błędu)
     // {
     //   path: '/about',
