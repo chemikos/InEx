@@ -183,8 +183,9 @@ router.get('/', async (req, res) => {
     const params = [profileId];
     const whereClauses = [];
     let sql =
-      'SELECT DISTINCT i.id_item, i.name, i.fk_profile, GROUP_CONCAT(l.name) AS labels, GROUP_CONCAT(l.id_label) AS label_ids FROM items i';
+      'SELECT DISTINCT i.id_item, i.name, i.fk_profile, c.name AS category_name, c.id_category, GROUP_CONCAT(l.name) AS labels, GROUP_CONCAT(l.id_label) AS label_ids FROM items i';
     sql += ' LEFT JOIN item_category ic ON i.id_item = ic.fk_item';
+    sql += ' LEFT JOIN category c ON c.id_category = ic.fk_category';
     sql += ' LEFT JOIN item_label il ON i.id_item = il.fk_item';
     sql += ' LEFT JOIN labels l ON il.fk_label = l.id_label';
     if (categoryIds.length > 0) {

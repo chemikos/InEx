@@ -23,6 +23,7 @@ const itemStore = useItemStore();
           <tr>
             <th class="py-2 px-4 text-left text-sm">ID</th>
             <th class="py-2 px-4 text-left text-sm">Nazwa Pozycji</th>
+            <th class="py-2 px-4 text-left text-sm">Nazwa Kategorii</th>
             <th class="py-2 px-4 text-left text-sm">Etykiety</th>
           </tr>
         </thead>
@@ -30,6 +31,7 @@ const itemStore = useItemStore();
           <tr v-for="item in itemStore.items" :key="item.id_item" class="border-b hover:bg-gray-50">
             <td class="py-2 px-4 text-sm">{{ item.id_item }}</td>
             <td class="py-2 px-4 text-sm font-medium">{{ item.name }}</td>
+            <td class="py-2 px-4 text-sm font-medium">{{ item.category_name }}</td>
             <td class="py-2 px-4 text-sm">
               <span
                 v-for="label in item.labels"
