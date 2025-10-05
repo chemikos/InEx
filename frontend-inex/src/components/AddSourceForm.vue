@@ -48,36 +48,32 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="p-4 bg-white rounded-lg shadow-md mt-6 border border-dashed border-green-300">
-    <h3 class="text-xl font-semibold mb-3 text-green-700">Dodaj Nowe Źródło Dochodu</h3>
+  <div class="form-container">
+    <h3 class="form-title">Dodaj Nowe Źródło Dochodu (Source)</h3>
 
     <div v-if="!activeProfileId" class="text-center p-4 bg-yellow-50 text-yellow-700 rounded-md">
-      Wybierz aktywny profil, aby dodać źródło.
+      Wybierz aktywny profil, aby dodawać źródła.
     </div>
 
     <form v-else @submit.prevent="handleSubmit">
       <div class="mb-3">
-        <label for="sourceName" class="block mb-1 text-sm font-medium text-gray-700"
-          >Nazwa Źródła:</label
-        >
+        <label for="sourceName" class="form-label">Nazwa Źródła:</label>
         <input
           id="sourceName"
           v-model="newSourceName"
           type="text"
           required
-          :disabled="isSubmitting"
-          placeholder="np. 'Pensja', 'Wynajem', 'Sprzedaż'"
-          class="w-full p-2 border rounded-md"
+          placeholder="np. 'Główna wypłata', 'Dochód z najmu'"
+          class="form-input"
         />
       </div>
 
       <button
         type="submit"
-        :disabled="isSubmitting || !activeProfileId"
-        class="w-full p-2 font-bold rounded-md transition duration-150"
+        :disabled="isSubmitting || !activeProfileId || !newSourceName.trim()"
+        class="btn-primary"
         :class="{
-          'bg-green-600 text-white hover:bg-green-700': !isSubmitting && activeProfileId,
-          'bg-gray-400 text-gray-700 cursor-not-allowed': isSubmitting || !activeProfileId,
+          'btn-disabled': isSubmitting || !activeProfileId || !newSourceName.trim(),
         }"
       >
         {{ isSubmitting ? 'Dodawanie...' : 'Dodaj Źródło (POST /sources)' }}
@@ -86,10 +82,10 @@ const handleSubmit = async () => {
 
     <div
       v-if="message.text"
+      class="msg-box"
       :class="{
-        'mt-3 p-2 rounded text-sm font-medium': true,
-        'bg-green-100 text-green-700': message.type === 'success',
-        'bg-red-100 text-red-700': message.type === 'error',
+        'msg-success': message.type === 'success',
+        'msg-error': message.type === 'error',
       }"
     >
       {{ message.text }}

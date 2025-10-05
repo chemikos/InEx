@@ -2,34 +2,50 @@
 import { useLabelStore } from '@/stores/labelStore';
 
 const labelStore = useLabelStore();
+
+const editLabel = (id: number) => {
+  console.log(`Edycja etykiety ID: ${id}`);
+  alert(`Edycja etykiety ID: ${id} (W BUDOWIE)`);
+};
+
+const deleteLabel = (id: number) => {
+  console.log(`Usuwanie etykiety ID: ${id}`);
+  if (confirm(`Czy na pewno chcesz usunąć etykietę ID: ${id}?`)) {
+    // Logika delete (do zaimplementowania w Pinia Store później)
+    alert(`Etykieta ID: ${id} usunięta! (W BUDOWIE)`);
+  }
+};
 </script>
 
 <template>
-  <div class="p-4 bg-white rounded-lg shadow-md">
-    <h3 class="text-xl font-semibold mb-3 text-green-700">
-      Etykiety ({{ labelStore.labelCount }})
-    </h3>
+  <div>
+    <h2 class="form-title">Lista Etykiet</h2>
+    <div v-if="labelStore.isLoading" class="p-4 text-center">Ładowanie etykiet...</div>
 
-    <div v-if="labelStore.isLoading" class="text-center py-4 text-gray-500">
-      Ładowanie etkiet...
-    </div>
-
-    <div
-      v-else-if="labelStore.labels.length === 0"
-      class="text-center py-4 text-gray-500 border p-2 rounded"
-    >
+    <div v-else-if="labelStore.labels.length === 0" class="p-4 text-center bg-gray-50 rounded-md">
       Brak zdefiniowanych etykiet dla tego profilu.
     </div>
 
-    <ul v-else class="divide-y divide-gray-200">
-      <li
-        v-for="label in labelStore.labels"
-        :key="label.id_label"
-        class="py-2 flex justify-between items-center"
-      >
-        <span class="font-medium text-gray-800">{{ label.name }}</span>
-        <span class="text-sm text-gray-500"> (ID: {{ label.id_label }})</span>
-      </li>
-    </ul>
+    <div v-else class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="table-header">Nazwa</th>
+            <th class="table-header actions-cell">Akcje</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="label in labelStore.labels" :key="label.id_label" class="table-row">
+            <td class="table-cell">{{ label.name }}</td>
+            <td class="table-cell actions-cell">
+              <button @click="editLabel(label.id_label)" class="btn-action btn-edit">Edytuj</button>
+              <button @click="deleteLabel(label.id_label)" class="btn-action btn-delete">
+                Usuń
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
