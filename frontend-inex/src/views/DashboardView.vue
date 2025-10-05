@@ -72,11 +72,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-    <div class="mt-8" v-if="profileStore.isProfileLoaded && profileStore.activeProfileId !== null">
-      <h2 class="text-3xl font-extrabold text-gray-900 mb-6">
-        Dashboard: {{ profileStore.activeProfile?.name }}
-      </h2>
+  <main class="dashboard-main-container">
+    <div
+      class="main-content-area"
+      v-if="profileStore.isProfileLoaded && profileStore.activeProfileId !== null"
+    >
+      <h2 class="dashboard-title">Dashboard: {{ profileStore.activeProfile?.name }}</h2>
 
       <CustomTabs
         :tab-names="['Finanse (Transakcje)', 'Pozycje i Słowniki']"
@@ -89,15 +90,15 @@ onMounted(() => {
             <AddIncomeForm />
           </div>
 
-          <h3 class="text-2xl font-semibold mt-8 mb-4">Wpłaty</h3>
+          <h3 class="subsection-title">Wydatki</h3>
           <ExpenseList />
 
-          <h3 class="text-2xl font-semibold mt-8 mb-4">Wydatki</h3>
+          <h3 class="subsection-title">Wpłaty</h3>
           <IncomeList />
         </template>
 
         <template #tab-1>
-          <h3 class="text-xl font-semibold mt-4 mb-3">Dodaj Dane Słownikowe</h3>
+          <h3 class="subsection-forms-title">Dodaj Dane Słownikowe</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <AddItemForm />
             <AddLabelForm />
@@ -105,10 +106,10 @@ onMounted(() => {
             <AddSourceForm />
           </div>
 
-          <h3 class="text-2xl font-semibold mt-8 mb-4">Pozycje Wydatków (Items)</h3>
+          <h3 class="subsection-title">Pozycje Wydatków (Items)</h3>
           <ItemList />
 
-          <h3 class="text-2xl font-semibold mt-8 mb-4">Źródła, Kategorie i Etykiety</h3>
+          <h3 class="subsection-title">Źródła, Kategorie i Etykiety</h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <SourceList />
             <CategoryList />
@@ -118,8 +119,62 @@ onMounted(() => {
       </CustomTabs>
     </div>
 
-    <div v-else class="mt-8">
+    <div v-else class="main-content-area">
       <AddProfileForm />
     </div>
   </main>
 </template>
+
+<style scoped>
+/* Definicja głównego kontenera, zastępująca max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 */
+.dashboard-main-container {
+  max-width: 1280px; /* max-w-7xl */
+  margin-left: auto;
+  margin-right: auto;
+  padding: 1.5rem 1rem; /* py-6 i defaultowy px */
+}
+
+@media (min-width: 640px) {
+  .dashboard-main-container {
+    padding-left: 1.5rem; /* sm:px-6 */
+    padding-right: 1.5rem; /* sm:px-6 */
+  }
+}
+
+@media (min-width: 1024px) {
+  .dashboard-main-container {
+    padding-left: 2rem; /* lg:px-8 */
+    padding-right: 2rem; /* lg:px-8 */
+  }
+}
+
+.main-content-area {
+  margin-top: 2rem; /* mt-8 */
+}
+
+.dashboard-title {
+  /* text-3xl font-extrabold text-gray-900 mb-6 */
+  font-size: 1.875rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+}
+
+.subsection-title {
+  /* text-2xl font-semibold mt-8 mb-4 */
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: #1f2937;
+}
+
+.subsection-forms-title {
+  /* text-xl font-semibold mt-4 mb-3 */
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.75rem;
+  color: #1f2937;
+}
+</style>

@@ -88,8 +88,8 @@ const toggleLabel = (id: number) => {
 </script>
 
 <template>
-  <div class="p-4 bg-white rounded-lg shadow-md mt-6 border border-dashed border-red-300">
-    <h3 class="text-xl font-semibold mb-3 text-red-700">Dodaj Nową Pozycję Wydatku (Item)</h3>
+  <div class="form-container border border-dashed border-red-300">
+    <h3 class="form-title text-red-700">Dodaj Nową Pozycję Wydatku (Item)</h3>
 
     <div v-if="!activeProfileId" class="text-center p-4 bg-yellow-50 text-yellow-700 rounded-md">
       Wybierz aktywny profil, aby dodać pozycję.
@@ -97,28 +97,24 @@ const toggleLabel = (id: number) => {
 
     <form v-else @submit.prevent="handleSubmit">
       <div class="mb-3">
-        <label for="itemName" class="block mb-1 text-sm font-medium text-gray-700"
-          >Nazwa Pozycji:</label
-        >
+        <label for="itemName" class="form-label">Nazwa Pozycji:</label>
         <input
           id="itemName"
           v-model="newItemName"
           type="text"
           required
           placeholder="np. 'Kawa i ciastko', 'Abonament Netflix'"
-          class="w-full p-2 border rounded-md"
+          class="form-input"
         />
       </div>
 
       <div class="mb-3">
-        <label for="categoryId" class="block mb-1 text-sm font-medium text-gray-700"
-          >Kategoria:</label
-        >
+        <label for="categoryId" class="form-label">Kategoria:</label>
         <select
           id="categoryId"
           v-model.number="selectedCategoryId"
           required
-          class="w-full p-2 border rounded-md"
+          class="form-select"
           :disabled="categoryStore.categories.length === 0"
         >
           <option :value="null" disabled>Wybierz kategorię...</option>
@@ -139,22 +135,15 @@ const toggleLabel = (id: number) => {
       </div>
 
       <div class="mb-4">
-        <label class="block mb-1 text-sm font-medium text-gray-700">Etykiety (Opcjonalnie):</label>
+        <label class="form-label">Etykiety (Opcjonalnie):</label>
         <div class="flex flex-wrap gap-2">
           <button
             type="button"
             v-for="label in labelStore.labels"
             :key="label.id_label"
             @click="toggleLabel(label.id_label)"
-            class="px-3 py-1 text-xs font-semibold rounded-full transition duration-150"
-            :class="{
-              'bg-indigo-600 text-white hover:bg-indigo-700': selectedLabelIds.includes(
-                label.id_label,
-              ),
-              'bg-gray-200 text-gray-700 hover:bg-gray-300': !selectedLabelIds.includes(
-                label.id_label,
-              ),
-            }"
+            class="label-button"
+            :class="{ 'label-active': selectedLabelIds.includes(label.id_label) }"
           >
             {{ label.name }}
           </button>
@@ -170,12 +159,9 @@ const toggleLabel = (id: number) => {
       <button
         type="submit"
         :disabled="isSubmitting || !activeProfileId || !selectedCategoryId"
-        class="w-full p-2 font-bold rounded-md transition duration-150"
+        class="btn-primary"
         :class="{
-          'bg-red-600 text-white hover:bg-red-700':
-            !isSubmitting && activeProfileId && selectedCategoryId,
-          'bg-gray-400 text-gray-700 cursor-not-allowed':
-            isSubmitting || !activeProfileId || !selectedCategoryId,
+          'btn-disabled': isSubmitting || !activeProfileId || !selectedCategoryId,
         }"
       >
         {{ isSubmitting ? 'Dodawanie...' : 'Dodaj Pozycję (POST /items)' }}
@@ -184,10 +170,10 @@ const toggleLabel = (id: number) => {
 
     <div
       v-if="message.text"
+      class="msg-box"
       :class="{
-        'mt-3 p-2 rounded text-sm font-medium': true,
-        'bg-green-100 text-green-700': message.type === 'success',
-        'bg-red-100 text-red-700': message.type === 'error',
+        'msg-success': message.type === 'success',
+        'msg-error': message.type === 'error',
       }"
     >
       {{ message.text }}

@@ -69,8 +69,8 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="p-4 bg-white rounded-lg shadow-md mt-6 border border-dashed border-green-500">
-    <h3 class="text-xl font-semibold mb-3 text-green-700">Dodaj Nową Wpłatę (Income)</h3>
+  <div class="form-container income-container">
+    <h3 class="form-title text-green-700">Dodaj Nową Wpłatę (Income)</h3>
 
     <div v-if="!activeProfileId" class="text-center p-4 bg-yellow-50 text-yellow-700 rounded-md">
       Wybierz aktywny profil, aby dodać wpłatę.
@@ -85,9 +85,7 @@ const handleSubmit = async () => {
     <form v-else @submit.prevent="handleSubmit">
       <div class="grid grid-cols-2 gap-3 mb-3">
         <div>
-          <label for="incomeAmount" class="block mb-1 text-sm font-medium text-gray-700"
-            >Kwota (zł):</label
-          >
+          <label for="incomeAmount" class="form-label">Kwota (zł):</label>
           <input
             id="incomeAmount"
             v-model.number="newIncomeAmount"
@@ -95,31 +93,18 @@ const handleSubmit = async () => {
             step="0.01"
             required
             placeholder="0.00"
-            class="w-full p-2 border rounded-md"
+            class="form-input"
           />
         </div>
         <div>
-          <label for="incomeDate" class="block mb-1 text-sm font-medium text-gray-700">Data:</label>
-          <input
-            id="incomeDate"
-            v-model="newIncomeDate"
-            type="date"
-            required
-            class="w-full p-2 border rounded-md"
-          />
+          <label for="incomeDate" class="form-label">Data:</label>
+          <input id="incomeDate" v-model="newIncomeDate" type="date" required class="form-input" />
         </div>
       </div>
 
       <div class="mb-4">
-        <label for="sourceId" class="block mb-1 text-sm font-medium text-gray-700"
-          >Źródło Dochodu:</label
-        >
-        <select
-          id="sourceId"
-          v-model.number="selectedSourceId"
-          required
-          class="w-full p-2 border rounded-md"
-        >
+        <label for="sourceId" class="form-label">Źródło Dochodu:</label>
+        <select id="sourceId" v-model.number="selectedSourceId" required class="form-select">
           <option :value="null" disabled>Wybierz źródło...</option>
           <option
             v-for="source in sourceStore.sources"
@@ -134,10 +119,9 @@ const handleSubmit = async () => {
       <button
         type="submit"
         :disabled="isSubmitting || !activeProfileId || sourceStore.sources.length === 0"
-        class="w-full p-2 font-bold rounded-md transition duration-150"
+        class="btn-success"
         :class="{
-          'bg-green-600 text-white hover:bg-green-700': !isSubmitting && activeProfileId,
-          'bg-gray-400 text-gray-700 cursor-not-allowed': isSubmitting || !activeProfileId,
+          'btn-disabled': isSubmitting || !activeProfileId || sourceStore.sources.length === 0,
         }"
       >
         {{ isSubmitting ? 'Dodawanie...' : 'Dodaj Wpłatę (POST /incomes)' }}
@@ -146,13 +130,29 @@ const handleSubmit = async () => {
 
     <div
       v-if="message.text"
+      class="msg-box"
       :class="{
-        'mt-3 p-2 rounded text-sm font-medium': true,
-        'bg-green-100 text-green-700': message.type === 'success',
-        'bg-red-100 text-red-700': message.type === 'error',
+        'msg-success': message.type === 'success',
+        'msg-error': message.type === 'error',
       }"
     >
       {{ message.text }}
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Lokalny styl do nadpisania obramowania kontenera na zielono, 
+   zamiast domyślnego zdefiniowanego w AddItemForm.vue */
+.income-container {
+  border: 1px dashed #10b981; /* green-500 */
+}
+
+/* Ponieważ grid i gap-3 nie są globalnie zdefiniowane, pozostawiamy je
+   w HTML, ponieważ są to unikalne style layoutu dla tego formularza. */
+
+/* Nadpisanie marginesu dolnego dla inputów w gridzie */
+.form-input {
+  margin-bottom: 0 !important; /* Usuń domyślny margines form-input */
+}
+</style>

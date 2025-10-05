@@ -2,34 +2,52 @@
 import { useSourceStore } from '@/stores/sourceStore';
 
 const sourceStore = useSourceStore();
+
+const editSource = (id: number) => {
+  console.log(`Edycja źródła ID: ${id}`);
+  alert(`Edycja źródła ID: ${id} (W BUDOWIE)`);
+};
+
+const deleteSource = (id: number) => {
+  console.log(`Usuwanie źródła ID: ${id}`);
+  if (confirm(`Czy na pewno chcesz usunąć źródła ID: ${id}?`)) {
+    // Logika delete (do zaimplementowania w Pinia Store później)
+    alert(`źródła ID: ${id} usunięta! (W BUDOWIE)`);
+  }
+};
 </script>
 
 <template>
-  <div class="p-4 bg-white rounded-lg shadow-md">
-    <h3 class="text-xl font-semibold mb-3 text-green-700">
-      Źródła Dochodów ({{ sourceStore.sourceCount }})
-    </h3>
+  <div>
+    <h2 class="form-title">Lista Źródeł Dochodu (Sources)</h2>
+    <div v-if="sourceStore.isLoading" class="p-4 text-center">Ładowanie źródeł...</div>
 
-    <div v-if="sourceStore.isLoading" class="text-center py-4 text-gray-500">
-      Ładowanie źródeł...
+    <div v-else-if="sourceStore.sources.length === 0" class="p-4 text-center bg-gray-50 rounded-md">
+      Brak zdefiniowanych źródeł dochodu dla tego profilu.
     </div>
 
-    <div
-      v-else-if="sourceStore.sources.length === 0"
-      class="text-center py-4 text-gray-500 border p-2 rounded"
-    >
-      Brak zdefiniowanych źródeł dochodów dla tego profilu.
+    <div v-else class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="table-header">Nazwa</th>
+            <th class="table-header actions-cell">Akcje</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="source in sourceStore.sources" :key="source.id_source" class="table-row">
+            <td class="table-cell">{{ source.name }}</td>
+            <td class="table-cell actions-cell">
+              <button @click="editSource(source.id_source)" class="btn-action btn-edit">
+                Edytuj
+              </button>
+              <button @click="deleteSource(source.id_source)" class="btn-action btn-delete">
+                Usuń
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-
-    <ul v-else class="divide-y divide-gray-200">
-      <li
-        v-for="source in sourceStore.sources"
-        :key="source.id_source"
-        class="py-2 flex justify-between items-center"
-      >
-        <span class="font-medium text-gray-800">{{ source.name }}</span>
-        <span class="text-sm text-gray-500"> (ID: {{ source.id_source }})</span>
-      </li>
-    </ul>
   </div>
 </template>

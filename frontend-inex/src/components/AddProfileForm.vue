@@ -38,31 +38,27 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="p-4 bg-white rounded-lg shadow-md mt-6 border border-dashed border-gray-300">
-    <h3 class="text-xl font-semibold mb-3 text-indigo-700">Dodaj Nowy Profil</h3>
+  <div class="form-container">
+    <h3 class="form-title">Dodaj Nowy Profil Finansowy</h3>
 
     <form @submit.prevent="handleSubmit">
-      <label for="profileName" class="block mb-2 text-sm font-medium text-gray-700"
-        >Nazwa Profilu:</label
-      >
-      <input
-        id="profileName"
-        v-model="newProfileName"
-        type="text"
-        required
-        :disabled="isSubmitting"
-        placeholder="Wprowadź nazwę (np. 'Rodzinny', 'Firmowy')"
-        class="w-full p-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-      />
+      <div class="mb-3">
+        <label for="profileName" class="form-label">Nazwa Profilu:</label>
+        <input
+          id="profileName"
+          v-model="newProfileName"
+          type="text"
+          required
+          placeholder="np. 'Budżet 2024', 'Konto Oszczędnościowe'"
+          class="form-input"
+        />
+      </div>
 
       <button
         type="submit"
-        :disabled="isSubmitting"
-        class="w-full mt-3 p-2 font-bold rounded-md transition duration-150"
-        :class="{
-          'bg-indigo-600 text-white hover:bg-indigo-700': !isSubmitting,
-          'bg-gray-400 text-gray-700 cursor-not-allowed': isSubmitting,
-        }"
+        :disabled="isSubmitting || !newProfileName.trim()"
+        class="btn-primary"
+        :class="{ 'btn-disabled': isSubmitting || !newProfileName.trim() }"
       >
         {{ isSubmitting ? 'Dodawanie...' : 'Dodaj Profil (POST /profiles)' }}
       </button>
@@ -70,10 +66,10 @@ const handleSubmit = async () => {
 
     <div
       v-if="message.text"
+      class="msg-box"
       :class="{
-        'mt-3 p-2 rounded text-sm font-medium': true,
-        'bg-green-100 text-green-700': message.type === 'success',
-        'bg-red-100 text-red-700': message.type === 'error',
+        'msg-success': message.type === 'success',
+        'msg-error': message.type === 'error',
       }"
     >
       {{ message.text }}

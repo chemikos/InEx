@@ -19,7 +19,7 @@ const handleProfileChange = (event: Event) => {
 </script>
 
 <template>
-  <div class="p-4 bg-gray-100 rounded-lg shadow-sm mb-6">
+  <div class="form-container profile-selector-container">
     <div v-if="!profileStore.isProfileLoaded" class="text-center text-gray-500">
       Ładowanie profili...
     </div>
@@ -31,12 +31,12 @@ const handleProfileChange = (event: Event) => {
         (ID: {{ profileStore.activeProfileId || '?' }})
       </div>
 
-      <label for="profile-select" class="block mb-1 text-sm text-gray-600"> Zmień profil: </label>
+      <label for="profile-select" class="form-label mb-1 text-gray-600"> Zmień profil: </label>
       <select
         id="profile-select"
         :value="profileStore.activeProfileId"
         @change="handleProfileChange"
-        class="w-full p-2 border rounded-md"
+        class="form-select"
       >
         <option
           v-for="profile in profileStore.allProfiles"
@@ -52,3 +52,22 @@ const handleProfileChange = (event: Event) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Lokalny styl do nadpisania tła i cienia, aby ProfileSelector wizualnie się wyróżniał, 
+   zgodnie z oryginalnym stylem. */
+.profile-selector-container {
+  background-color: #f3f4f6; /* bg-gray-100 */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* mniejszy cień shadow-sm */
+  padding: 1rem; /* p-4 */
+  border-radius: 0.5rem; /* rounded-lg */
+  margin-bottom: 1.5rem; /* mb-6 */
+  /* Nadpisujemy domyślny biały kolor i większy cień z form-container */
+}
+
+/* Ponieważ form-label ma domyślny kolor gray-700, 
+   a w oryginalnym kodzie było gray-600, możemy to zostawić lub usunąć: */
+.form-label {
+  color: #4b5563; /* gray-600 */
+}
+</style>

@@ -2,35 +2,28 @@
 import { ref, watch } from 'vue';
 
 const props = defineProps<{
-  // Nazwy zakładek, np. ['Finanse', 'Słowniki']
   tabNames: string[];
-  // Domyślnie aktywna zakładka (indeks)
   initialActiveTab?: number;
 }>();
 
-// Aktywny indeks zakładki
 const activeTabIndex = ref(props.initialActiveTab ?? 0);
-
-// Emitowanie zdarzenia, gdy zakładka się zmienia
 const emit = defineEmits(['tab-change']);
 
-// Obserwowanie zmian aktywnego indeksu i emitowanie nazwy zakładki
 watch(activeTabIndex, (newIndex) => {
   emit('tab-change', props.tabNames[newIndex]);
 });
 </script>
 
 <template>
-  <div class="w-full">
-    <div class="flex border-b border-gray-200 mb-4">
+  <div class="tabs-container">
+    <div class="tabs-nav">
       <button
         v-for="(name, index) in tabNames"
         :key="index"
         @click="activeTabIndex = index"
-        class="px-4 py-2 text-lg font-medium transition duration-200 ease-in-out"
+        class="tab-button"
         :class="{
-          'text-indigo-600 border-b-2 border-indigo-600': activeTabIndex === index,
-          'text-gray-500 hover:text-gray-700': activeTabIndex !== index,
+          'tab-active': activeTabIndex === index,
         }"
       >
         {{ name }}
@@ -42,3 +35,43 @@ watch(activeTabIndex, (newIndex) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.tabs-container {
+  width: 100%;
+}
+
+.tabs-nav {
+  display: flex;
+  border-bottom: 1px solid #d1d5db; /* Szare obramowanie pod spodem */
+  margin-bottom: 1rem;
+  gap: 0.5rem;
+}
+
+.tab-button {
+  padding: 0.5rem 1rem;
+  font-size: 1.125rem; /* 18px */
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280; /* Domyślny kolor tekstu (szary) */
+  margin: 0;
+  white-space: nowrap;
+}
+
+.tab-button:hover:not(.tab-active) {
+  color: #4b5563; /* Ciemniejszy szary na hover */
+}
+
+.tab-active {
+  color: #4f46e5; /* Aktywny kolor (Indygo) */
+  border-bottom: 2px solid #4f46e5;
+  font-weight: 600;
+}
+
+.tab-content {
+  padding: 0;
+}
+</style>

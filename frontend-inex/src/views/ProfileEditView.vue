@@ -111,59 +111,50 @@ const handleDelete = async () => {
 </script>
 
 <template>
-  <main class="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
-    <button
-      @click="router.push({ name: 'dashboard' })"
-      class="mb-6 text-indigo-600 hover:text-indigo-800 flex items-center"
-    >
+  <main class="profile-edit-main-container">
+    <button @click="router.push({ name: 'dashboard' })" class="back-link">
       &larr; Powrót do Dashboardu
     </button>
 
     <div v-if="profileToEdit">
-      <h1 class="text-3xl font-extrabold text-gray-900 mb-6">
-        Edycja Profilu: {{ profileToEdit.name }}
-      </h1>
+      <h1 class="page-title">Edycja Profilu: {{ profileToEdit.name }}</h1>
 
-      <div class="bg-white p-6 rounded-lg shadow-xl mb-8 border-t-4 border-indigo-600">
-        <h2 class="text-xl font-semibold mb-4 text-indigo-700">Zmień Nazwę</h2>
+      <div class="form-container edit-section primary-section">
+        <h2 class="section-title">Zmień Nazwę</h2>
         <form @submit.prevent="handleNameUpdate">
-          <label for="profile-name" class="block text-sm font-medium text-gray-700"
-            >Nowa Nazwa Profilu:</label
-          >
+          <label for="profile-name" class="form-label">Nowa Nazwa Profilu:</label>
           <input
             id="profile-name"
             v-model="newProfileName"
             type="text"
             required
             :disabled="isSubmitting"
-            class="mt-1 w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+            class="form-input"
           />
           <button
             type="submit"
             :disabled="isSubmitting || newProfileName.trim() === profileToEdit.name"
-            class="mt-4 w-full p-3 font-bold rounded-md transition duration-150"
+            class="btn-save-profile"
             :class="{
-              'bg-indigo-600 text-white hover:bg-indigo-700':
-                !isSubmitting && newProfileName.trim() !== profileToEdit.name,
-              'bg-gray-400 text-gray-700 cursor-not-allowed':
-                isSubmitting || newProfileName.trim() === profileToEdit.name,
+              'btn-disabled': isSubmitting || newProfileName.trim() === profileToEdit.name,
             }"
           >
-            {{ isSubmitting ? 'Zapisywanie...' : 'Zapisz Zmianę Nazwy' }}
+            {{ isSubmitting ? 'Zapisywanie...' : 'Zapisz Zmianę Nazwy (PUT)' }}
           </button>
         </form>
       </div>
 
-      <div class="bg-red-50 p-6 rounded-lg shadow-xl border-t-4 border-red-600">
-        <h2 class="text-xl font-semibold mb-4 text-red-700">Strefa Zagrożenia</h2>
-        <p class="text-gray-600 mb-4">
+      <div class="form-container edit-section danger-section">
+        <h2 class="danger-title">Strefa Zagrożenia</h2>
+        <p class="danger-text">
           Usunięcie profilu jest operacją nieodwracalną i usunie wszystkie powiązane dane (wpłaty,
           wydatki, pozycje, słowniki).
         </p>
         <button
           @click="handleDelete"
           :disabled="isSubmitting"
-          class="w-full p-3 font-bold rounded-md transition duration-150 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="btn-primary"
+          :class="{ 'btn-disabled': isSubmitting }"
         >
           {{ isSubmitting ? 'Usuwanie...' : `Usuń Profil: ${profileToEdit.name}` }} (DELETE)
         </button>
@@ -171,10 +162,10 @@ const handleDelete = async () => {
 
       <div
         v-if="message.text"
+        class="msg-box"
         :class="{
-          'mt-4 p-3 rounded text-sm font-medium': true,
-          'bg-green-100 text-green-700': message.type === 'success',
-          'bg-red-100 text-red-700': message.type === 'error',
+          'msg-success': message.type === 'success',
+          'msg-error': message.type === 'error',
         }"
       >
         {{ message.text }}
@@ -182,3 +173,95 @@ const handleDelete = async () => {
     </div>
   </main>
 </template>
+
+<style scoped>
+/* Kontener główny, aby zachować max-width */
+.profile-edit-main-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+/* Link Powrotny */
+.back-link {
+  color: #4f46e5; /* indigo-600 */
+  margin-bottom: 1.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: color 0.15s ease-in-out;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.back-link:hover {
+  color: #3730a3; /* indigo-800 */
+}
+
+/* Tytuł Strony */
+.page-title {
+  font-size: 1.875rem; /* text-3xl */
+  font-weight: 800;
+  color: #1f2937; /* gray-900 */
+  margin-bottom: 1.5rem;
+}
+
+/* --- SEKCJE EDYCJI (Bazują na form-container) --- */
+
+.edit-section {
+  /* Nadpisanie marginesu i dodanie unikalnego obramowania dla sekcji */
+  margin-bottom: 2rem;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.primary-section {
+  border-top: 4px solid #4f46e5; /* border-t-4 border-indigo-600 */
+}
+
+.danger-section {
+  border-top: 4px solid #dc2626; /* border-t-4 border-red-600 */
+  background-color: #fef2f2; /* red-50 */
+}
+
+.section-title {
+  font-size: 1.25rem; /* text-xl */
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #4338ca; /* indigo-700 */
+}
+
+.danger-title {
+  color: #b91c1c; /* red-700 */
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.danger-text {
+  color: #4b5563; /* gray-600 */
+  margin-bottom: 1rem;
+}
+
+/* --- PRZYCISK ZAPISZ (PUT) --- */
+.btn-save-profile {
+  /* Używamy stylów btn-primary, ale nadpisujemy kolory na indigo */
+  margin-top: 1rem;
+  width: 100%;
+  padding: 0.75rem;
+  font-weight: 700;
+  border-radius: 0.375rem;
+  transition: background-color 0.15s ease-in-out;
+  background-color: #4f46e5; /* indigo-600 */
+  color: white;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-save-profile:hover:not(:disabled) {
+  background-color: #4338ca; /* indigo-700 */
+}
+
+/* Globalna klasa btn-disabled obsłuży stan nieaktywny */
+</style>

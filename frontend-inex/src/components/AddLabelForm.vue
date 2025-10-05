@@ -48,37 +48,31 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="p-4 bg-white rounded-lg shadow-md mt-6 border border-dashed border-indigo-300">
-    <h3 class="text-xl font-semibold mb-3 text-indigo-700">Dodaj Nową Etykietę</h3>
+  <div class="form-container">
+    <h3 class="form-title">Dodaj Nową Etykietę</h3>
 
     <div v-if="!activeProfileId" class="text-center p-4 bg-yellow-50 text-yellow-700 rounded-md">
-      Wybierz aktywny profil, aby dodać etykietę.
+      Wybierz aktywny profil, aby dodawać etykiety.
     </div>
 
     <form v-else @submit.prevent="handleSubmit">
       <div class="mb-3">
-        <label for="labelName" class="block mb-1 text-sm font-medium text-gray-700"
-          >Nazwa Etykiety:</label
-        >
+        <label for="labelName" class="form-label">Nazwa Etykiety:</label>
         <input
           id="labelName"
           v-model="newLabelName"
           type="text"
           required
-          :disabled="isSubmitting"
-          placeholder="np. 'Weekend', 'Pilne', 'Raty'"
-          class="w-full p-2 border rounded-md"
+          placeholder="np. 'Weekend', 'Subskrypcja'"
+          class="form-input"
         />
       </div>
 
       <button
         type="submit"
-        :disabled="isSubmitting || !activeProfileId"
-        class="w-full p-2 font-bold rounded-md transition duration-150"
-        :class="{
-          'bg-indigo-600 text-white hover:bg-indigo-700': !isSubmitting && activeProfileId,
-          'bg-gray-400 text-gray-700 cursor-not-allowed': isSubmitting || !activeProfileId,
-        }"
+        :disabled="isSubmitting || !activeProfileId || !newLabelName.trim()"
+        class="btn-primary"
+        :class="{ 'btn-disabled': isSubmitting || !activeProfileId || !newLabelName.trim() }"
       >
         {{ isSubmitting ? 'Dodawanie...' : 'Dodaj Etykietę (POST /labels)' }}
       </button>
@@ -86,10 +80,10 @@ const handleSubmit = async () => {
 
     <div
       v-if="message.text"
+      class="msg-box"
       :class="{
-        'mt-3 p-2 rounded text-sm font-medium': true,
-        'bg-green-100 text-green-700': message.type === 'success',
-        'bg-red-100 text-red-700': message.type === 'error',
+        'msg-success': message.type === 'success',
+        'msg-error': message.type === 'error',
       }"
     >
       {{ message.text }}

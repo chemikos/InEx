@@ -33,24 +33,19 @@ const goToProfileEdit = () => {
 </script>
 
 <template>
-  <header class="bg-white shadow-lg p-4 sticky top-0 z-10 border-b border-gray-200">
-    <div class="max-w-7xl mx-auto flex justify-between items-center">
-      <h1
-        class="text-2xl font-bold text-indigo-700 cursor-pointer"
-        @click="router.push({ name: 'dashboard' })"
-      >
-        Mój Budżet 💰
-      </h1>
+  <header class="app-header">
+    <div class="header-content">
+      <h1 class="logo" @click="router.push({ name: 'dashboard' })">Mój Budżet 💰</h1>
 
-      <div class="flex items-center space-x-4">
-        <div class="flex items-center space-x-2">
-          <label for="profile-select" class="text-sm font-medium text-gray-700 hidden sm:block"
+      <div class="profile-controls">
+        <div class="profile-select-group">
+          <label for="profile-select" class="form-label profile-label-hidden"
             >Aktywny Profil:</label
           >
           <select
             id="profile-select"
             v-model="selectedProfileId"
-            class="p-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500"
+            class="form-select profile-header-select"
             :disabled="profileStore.allProfiles.length === 0"
           >
             <option :value="null" disabled>Wybierz...</option>
@@ -67,7 +62,8 @@ const goToProfileEdit = () => {
         <button
           @click="goToProfileEdit"
           :disabled="!profileStore.activeProfileId"
-          class="p-2 border border-indigo-500 text-indigo-600 rounded-md shadow-sm text-sm font-medium hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150"
+          class="btn-edit-profile-header"
+          :class="{ 'btn-disabled-header': !profileStore.activeProfileId }"
         >
           Edytuj Profil
         </button>
@@ -75,3 +71,91 @@ const goToProfileEdit = () => {
     </div>
   </header>
 </template>
+
+<style scoped>
+.app-header {
+  background-color: white;
+  /* Delikatny cień i stała pozycja, jak w oryginalnym kodzie */
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.header-content {
+  /* Utrzymanie responsywności i wyśrodkowanie */
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #4f46e5; /* indigo-600 */
+  cursor: pointer;
+  margin: 0;
+}
+
+.profile-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.profile-select-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Dostosowanie globalnego form-label dla małych ekranów */
+.form-label.profile-label-hidden {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5563;
+  display: none; /* Ukryte na małych ekranach */
+}
+
+@media (min-width: 640px) {
+  .form-label.profile-label-hidden {
+    display: block; /* Pokazane na sm: */
+  }
+}
+
+/* Nadpisanie globalnego form-select, aby był mniejszy (text-sm i mniejszy padding) */
+.form-select.profile-header-select {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* --- Przycisk Edycji (Wtórny) --- */
+.btn-edit-profile-header {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  transition: background-color 0.15s ease-in-out;
+  background-color: white;
+  border: 1px solid #6366f1; /* indigo-500 */
+  color: #4f46e5; /* indigo-600 */
+  cursor: pointer;
+}
+
+.btn-edit-profile-header:hover:not(:disabled) {
+  background-color: #eef2ff; /* indigo-50 */
+}
+
+.btn-disabled-header {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: #9ca3af; /* gray-400 */
+  color: #6b7280; /* gray-500 */
+}
+</style>
