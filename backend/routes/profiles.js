@@ -53,9 +53,9 @@ router.post('/', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const profileName = req.body.profileName;
@@ -99,9 +99,9 @@ router.get('/:profileId', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const profileId = req.params.profileId;
@@ -133,9 +133,9 @@ router.put('/:profileId', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const profileId = req.params.profileId;
@@ -175,9 +175,9 @@ router.delete('/:profileId', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const profileId = req.params.profileId;

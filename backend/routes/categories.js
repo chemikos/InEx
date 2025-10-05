@@ -58,9 +58,9 @@ router.post('/', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const { profileId, categoryName } = req.body;
@@ -74,11 +74,9 @@ router.post('/', async (req, res) => {
     }
     if (await checkCategoryNameExists(categoryName, profileId, null)) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(409)
-        .json({
-          message: 'Kategoria o tej nazwie już istnieje w tym profilu.',
-        });
+      return res.status(409).json({
+        message: 'Kategoria o tej nazwie już istnieje w tym profilu.',
+      });
     }
     const sql = 'INSERT INTO categories (name, fk_profile) VALUES (?, ?)';
     const insertResult = await db.runPromise(sql, [categoryName, profileId]);
@@ -102,9 +100,9 @@ router.get('/', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const profileId = validationParams[0].value;
@@ -137,9 +135,9 @@ router.get('/:categoryId', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const profileId = validationParams[0].value;
@@ -183,9 +181,9 @@ router.put('/:categoryId', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const profileId = req.body.profileId;
@@ -201,11 +199,9 @@ router.put('/:categoryId', async (req, res) => {
     }
     if (await checkCategoryNameExists(categoryName, profileId, categoryId)) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(409)
-        .json({
-          message: 'Kategoria o tej nazwie już istnieje w tym profilu.',
-        });
+      return res.status(409).json({
+        message: 'Kategoria o tej nazwie już istnieje w tym profilu.',
+      });
     }
     sql =
       'UPDATE categories SET name = ? WHERE id_category = ? AND fk_profile = ?';
@@ -244,9 +240,9 @@ router.delete('/:categoryId', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const profileId = validationParams[0].value;

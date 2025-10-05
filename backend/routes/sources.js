@@ -58,9 +58,9 @@ router.post('/', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const { profileId, sourceName } = req.body;
@@ -100,9 +100,9 @@ router.get('/', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const profileId = validationParams[0].value;
@@ -135,9 +135,9 @@ router.get('/:sourceId', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const profileId = validationParams[0].value;
@@ -181,9 +181,9 @@ router.put('/:sourceId', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const profileId = req.body.profileId;
@@ -199,11 +199,9 @@ router.put('/:sourceId', async (req, res) => {
     }
     if (await checkSourceNameExists(sourceName, profileId, sourceId)) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(409)
-        .json({
-          message: 'Typ dochou o tej nazwie już istnieje w tym profilu.',
-        });
+      return res.status(409).json({
+        message: 'Typ dochou o tej nazwie już istnieje w tym profilu.',
+      });
     }
     sql = 'UPDATE sources SET name = ? WHERE id_source = ? AND fk_profile = ?';
     const updateResult = await db.runPromise(sql, [
@@ -241,9 +239,9 @@ router.delete('/:sourceId', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const profileId = validationParams[0].value;

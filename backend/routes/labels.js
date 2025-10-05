@@ -58,9 +58,9 @@ router.post('/', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const { profileId, labelName } = req.body;
@@ -112,9 +112,9 @@ router.get('/', async (req, res) => {
     'label',
   );
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const profileId = validationParams[0].value;
@@ -165,9 +165,9 @@ router.get('/:labelId', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const profileId = validationParams[0].value;
@@ -210,9 +210,9 @@ router.put('/:labelId', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const { profileId, labelName } = req.body;
@@ -267,9 +267,9 @@ router.delete('/:labelId', async (req, res) => {
     },
   ];
   for (const param of validationParams) {
-    const error = getValidationError(param.value, param.field, param.type);
-    if (error) {
-      return res.status(400).json({ error });
+    const message = getValidationError(param.value, param.field, param.type);
+    if (message) {
+      return res.status(400).json({ message });
     }
   }
   const profileId = validationParams[0].value;
