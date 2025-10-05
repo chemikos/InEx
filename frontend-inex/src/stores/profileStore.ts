@@ -42,7 +42,7 @@ export const useProfileStore = defineStore('profile', () => {
     }
   }
 
-  function setActiveProfile(id: number) {
+  function setActiveProfile(id: number | null) {
     if (activeProfileId.value !== id) {
       activeProfileId.value = id;
       // Tu można zaimplementować np. przeładowanie danych dla nowego profilu

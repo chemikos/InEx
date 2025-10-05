@@ -85,24 +85,24 @@ onMounted(() => {
       >
         <template #tab-0>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <AddIncomeForm />
             <AddExpenseForm />
+            <AddIncomeForm />
           </div>
 
           <h3 class="text-2xl font-semibold mt-8 mb-4">Wpłaty</h3>
-          <IncomeList />
+          <ExpenseList />
 
           <h3 class="text-2xl font-semibold mt-8 mb-4">Wydatki</h3>
-          <ExpenseList />
+          <IncomeList />
         </template>
 
         <template #tab-1>
           <h3 class="text-xl font-semibold mt-4 mb-3">Dodaj Dane Słownikowe</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <AddSourceForm />
-            <AddCategoryForm />
-            <AddLabelForm />
             <AddItemForm />
+            <AddLabelForm />
+            <AddCategoryForm />
+            <AddSourceForm />
           </div>
 
           <h3 class="text-2xl font-semibold mt-8 mb-4">Pozycje Wydatków (Items)</h3>
