@@ -92,7 +92,7 @@ router.post('/', async (req, res) => {
     if (await checkItemNameExists(itemName, profileId, categoryId, null)) {
       await db.runPromise('ROLLBACK;');
       return res.status(409).json({
-        error:
+        message:
           'Pozycja o tej nazwie już istnieje w tej kategorii w tym profilu.',
       });
     }
@@ -101,7 +101,7 @@ router.post('/', async (req, res) => {
         if (!(await checkLabelExists(labelId, profileId))) {
           await db.runPromise('ROLLBACK;');
           return res.status(404).json({
-            error: `Etykieta o ID ${labelId} nie istnieje w tym profilu.`,
+            message: `Etykieta o ID ${labelId} nie istnieje w tym profilu.`,
           });
         }
       }
@@ -121,7 +121,7 @@ router.post('/', async (req, res) => {
       await db.runPromise('ROLLBACK;');
       return res
         .status(409)
-        .json({ error: 'Ta pozycja już ma przypisaną kategorię.' });
+        .json({ message: 'Ta pozycja już ma przypisaną kategorię.' });
     }
     if (labelIds.length > 0) {
       for (const labelId of labelIds) {
@@ -137,7 +137,7 @@ router.post('/', async (req, res) => {
     });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -226,7 +226,7 @@ router.get('/', async (req, res) => {
 
     return res.status(200).json(processedItems);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -262,7 +262,7 @@ router.get('/:itemId', async (req, res) => {
     const resultItem = await db.getPromise(sql, [itemId, profileId]);
     return res.status(200).json({ message: resultItem });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -313,22 +313,22 @@ router.put('/:itemId', async (req, res) => {
     }
     if (!(await checkCategoryExists(categoryId, profileId))) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(404)
-        .json({ error: 'Kategoria o podanym ID nie istnieje w tym profilu.' });
+      return res.status(404).json({
+        message: 'Kategoria o podanym ID nie istnieje w tym profilu.',
+      });
     }
     if (!(await checkItemExists(itemId, profileId))) {
       await db.runPromise('ROLLBACK;');
       return res
         .status(404)
-        .json({ error: 'Pozycja o podamnym ID nie istnieje w tym profilu.' });
+        .json({ message: 'Pozycja o podamnym ID nie istnieje w tym profilu.' });
     }
     if (labelIds.length > 0) {
       for (const labelId of labelIds) {
         if (!(await checkLabelExists(labelId, profileId))) {
           await db.runPromise('ROLLBACK;');
           return res.status(404).json({
-            error: `Etykieta o tym ID (${labelId}) nie istnieje w tym profilu.`,
+            message: `Etykieta o tym ID (${labelId}) nie istnieje w tym profilu.`,
           });
         }
       }
@@ -336,7 +336,7 @@ router.put('/:itemId', async (req, res) => {
     if (await checkItemNameExists(itemName, profileId, categoryId, itemId)) {
       await db.runPromise('ROLLBACK;');
       return res.status(409).json({
-        error:
+        message:
           'Pozycja o tej nazwie już istnieje w tej kategorii w tym profilu.',
       });
     }
@@ -350,7 +350,7 @@ router.put('/:itemId', async (req, res) => {
       await db.runPromise('ROLLBACK;');
       return res
         .status(404)
-        .json({ error: 'Pozycja o podanym ID nie istnieje w tym profilu.' });
+        .json({ message: 'Pozycja o podanym ID nie istnieje w tym profilu.' });
     }
     sql = 'UPDATE item_category SET fk_category = ? WHERE fk_item = ?';
     const updateItemCategoryResult = await db.runPromise(sql, [
@@ -360,7 +360,7 @@ router.put('/:itemId', async (req, res) => {
     if (updateItemCategoryResult.changes === 0) {
       await db.runPromise('ROLLBACK;');
       return res.status(404).json({
-        error: 'Pozycja o tym ID nie jest przypisana do żadnej kategorii.',
+        message: 'Pozycja o tym ID nie jest przypisana do żadnej kategorii.',
       });
     }
     sql = 'DELETE FROM item_label WHERE fk_item = ?';
@@ -377,7 +377,7 @@ router.put('/:itemId', async (req, res) => {
     });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -432,7 +432,7 @@ router.delete('/:itemId', async (req, res) => {
       .json({ message: 'Pozycja i jej powiązania usunięte pomyślnie.' });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 

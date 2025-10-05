@@ -99,7 +99,7 @@ router.post('/', async (req, res) => {
     });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -141,12 +141,12 @@ router.get('/', async (req, res) => {
   if (req.query.dateFrom && !validateDate(dateFrom)) {
     return res
       .status(400)
-      .json({ error: 'Data początkowa zawiera niepoprawne dane.' });
+      .json({ message: 'Data początkowa zawiera niepoprawne dane.' });
   }
   if (req.query.dateTo && !validateDate(dateTo)) {
     return res
       .status(400)
-      .json({ error: 'Data końcowa zawiera niepoprawne dane.' });
+      .json({ message: 'Data końcowa zawiera niepoprawne dane.' });
   }
   try {
     if (!(await checkProfileExists(profileId))) {
@@ -212,7 +212,7 @@ router.get('/', async (req, res) => {
 
     return res.status(200).json(processedExpenses);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -274,7 +274,7 @@ router.get('/:expenseId', async (req, res) => {
     }
     return res.status(200).json(resultExpense);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -351,7 +351,7 @@ router.put('/:expenseId', async (req, res) => {
       .json({ message: 'Wydatek zaktualizowany pomyślnie.' });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -396,7 +396,7 @@ router.delete('/:expenseId', async (req, res) => {
     return res.status(200).json({ message: 'Wydatek usunięty pomyślnie.' });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 

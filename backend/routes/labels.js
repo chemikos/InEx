@@ -76,7 +76,7 @@ router.post('/', async (req, res) => {
       await db.runPromise('ROLLBACK;');
       return res
         .status(409)
-        .json({ error: 'Etykieta o tej nazwie już istnieje w tym profilu.' });
+        .json({ message: 'Etykieta o tej nazwie już istnieje w tym profilu.' });
     }
     const sql = 'INSERT INTO labels (name, fk_profile) VALUES (?, ?)';
     const insertResult = await db.runPromise(sql, [labelName, profileId]);
@@ -87,7 +87,7 @@ router.post('/', async (req, res) => {
     });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -147,7 +147,7 @@ router.get('/', async (req, res) => {
     const resultLabels = await db.allPromise(sql, params);
     return res.status(200).json(resultLabels);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -187,7 +187,7 @@ router.get('/:labelId', async (req, res) => {
     }
     return res.status(200).json(resultLabel);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -229,7 +229,7 @@ router.put('/:labelId', async (req, res) => {
       await db.runPromise('ROLLBACK;');
       return res
         .status(409)
-        .json({ error: 'Etykieta o tej nazwie już istnieje w tym profilu.' });
+        .json({ message: 'Etykieta o tej nazwie już istnieje w tym profilu.' });
     }
     sql = 'UPDATE labels SET name = ? WHERE id_label = ? AND fk_profile = ?';
     const updateResult = await db.runPromise(sql, [
@@ -249,7 +249,7 @@ router.put('/:labelId', async (req, res) => {
       .json({ message: 'Etykieta zaktualizowana pomyślnie.' });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -306,7 +306,7 @@ router.delete('/:labelId', async (req, res) => {
       .json({ message: 'Etykieta została usunięta pomyślnie.' });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 

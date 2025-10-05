@@ -65,7 +65,7 @@ router.post('/', async (req, res) => {
       await db.runPromise('ROLLBACK;');
       return res
         .status(409)
-        .json({ error: 'Profil o tej nazwie już istnieje.' });
+        .json({ message: 'Profil o tej nazwie już istnieje.' });
     }
     const sql = 'INSERT INTO profiles (name) VALUES (?)';
     const insertResult = await db.runPromise(sql, [profileName]);
@@ -76,7 +76,7 @@ router.post('/', async (req, res) => {
     });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -86,7 +86,7 @@ router.get('/', async (req, res) => {
     const resultProfiles = await db.allPromise(sql, []);
     return res.status(200).json(resultProfiles);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -115,7 +115,7 @@ router.get('/:profileId', async (req, res) => {
     }
     return res.status(200).json(resultProfile);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -146,7 +146,7 @@ router.put('/:profileId', async (req, res) => {
       await db.runPromise('ROLLBACK;');
       return res
         .status(409)
-        .json({ error: 'Profil o tej nazwie już istnieje.' });
+        .json({ message: 'Profil o tej nazwie już istnieje.' });
     }
     const sql = 'UPDATE profiles SET name = ? WHERE id_profile = ?';
     const updateResult = await db.runPromise(sql, [profileName, profileId]);
@@ -154,7 +154,7 @@ router.put('/:profileId', async (req, res) => {
       await db.runPromise('ROLLBACK;');
       return res
         .status(404)
-        .json({ error: 'Profil o podanym ID nie istnieje.' });
+        .json({ message: 'Profil o podanym ID nie istnieje.' });
     }
     await db.runPromise('COMMIT;');
     return res
@@ -162,7 +162,7 @@ router.put('/:profileId', async (req, res) => {
       .json({ message: 'Profil zaktualizowany pomyślnie!' });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -210,7 +210,7 @@ router.delete('/:profileId', async (req, res) => {
     return res.status(200).json({ message: 'Profil usunięty pomyślnie.' });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 

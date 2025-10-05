@@ -99,7 +99,7 @@ router.post('/', async (req, res) => {
     });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -129,12 +129,12 @@ router.get('/', async (req, res) => {
   if (req.query.dateFrom && !validateDate(dateFrom)) {
     return res
       .status(400)
-      .json({ error: 'Data początkowa zawiera niepoprawne dane.' });
+      .json({ message: 'Data początkowa zawiera niepoprawne dane.' });
   }
   if (req.query.dateTo && !validateDate(dateTo)) {
     return res
       .status(400)
-      .json({ error: 'Data końcowa zawiera niepoprawne dane.' });
+      .json({ message: 'Data końcowa zawiera niepoprawne dane.' });
   }
   try {
     if (!(await checkProfileExists(profileId))) {
@@ -165,7 +165,7 @@ router.get('/', async (req, res) => {
     const resultIncomes = await db.allPromise(sql, params);
     return res.status(200).json(resultIncomes);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -217,7 +217,7 @@ router.get('/:incomeId', async (req, res) => {
     }
     return res.status(200).json(resultIncome);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -294,7 +294,7 @@ router.put('/:incomeId', async (req, res) => {
       .json({ message: 'Wpłata zaktualizowana pomyślnie.' });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -339,7 +339,7 @@ router.delete('/:incomeId', async (req, res) => {
     return res.status(200).json({ message: 'Wpłata usunięta pomyślnie.' });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 

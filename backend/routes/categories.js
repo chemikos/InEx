@@ -76,7 +76,9 @@ router.post('/', async (req, res) => {
       await db.runPromise('ROLLBACK;');
       return res
         .status(409)
-        .json({ error: 'Kategoria o tej nazwie już istnieje w tym profilu.' });
+        .json({
+          message: 'Kategoria o tej nazwie już istnieje w tym profilu.',
+        });
     }
     const sql = 'INSERT INTO categories (name, fk_profile) VALUES (?, ?)';
     const insertResult = await db.runPromise(sql, [categoryName, profileId]);
@@ -87,7 +89,7 @@ router.post('/', async (req, res) => {
     });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -117,7 +119,7 @@ router.get('/', async (req, res) => {
     const resultCategories = await db.allPromise(sql, [profileId]);
     return res.status(200).json(resultCategories);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -158,7 +160,7 @@ router.get('/:categoryId', async (req, res) => {
     }
     return res.status(200).json(resultCategory);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -201,7 +203,9 @@ router.put('/:categoryId', async (req, res) => {
       await db.runPromise('ROLLBACK;');
       return res
         .status(409)
-        .json({ error: 'Kategoria o tej nazwie już istnieje w tym profilu.' });
+        .json({
+          message: 'Kategoria o tej nazwie już istnieje w tym profilu.',
+        });
     }
     sql =
       'UPDATE categories SET name = ? WHERE id_category = ? AND fk_profile = ?';
@@ -222,7 +226,7 @@ router.put('/:categoryId', async (req, res) => {
       .json({ message: 'Kategoria zaktualizowana pomyślnie.' });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -279,7 +283,7 @@ router.delete('/:categoryId', async (req, res) => {
       .json({ message: 'Kategoria została usunięta pomyślnie.' });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
