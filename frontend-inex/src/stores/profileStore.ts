@@ -1,12 +1,11 @@
-// src/stores/profileStore.ts
-
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import http from '@/api/http';
 import router from '@/router';
 import { isAxiosError } from 'axios';
 
-// Definicja typu dla Profilu
+const ACTIVE_PROFILE_KEY = 'activeProfileId';
+
 export interface Profile {
   id_profile: number;
   name: string;
@@ -15,26 +14,54 @@ export interface Profile {
 export const useProfileStore = defineStore('profile', () => {
   // --- STATE ---
   const allProfiles = ref<Profile[]>([]);
-  const activeProfileId = ref<number | null>(null);
+
+  const storedId = localStorage.getItem(ACTIVE_PROFILE_KEY);
+  const initialActiveId = storedId ? parseInt(storedId) : null;
+  const activeProfileId = ref<number | null>(initialActiveId);
 
   // --- GETTERS (Computed) ---
   const activeProfile = computed(() => {
     return allProfiles.value.find((p) => p.id_profile === activeProfileId.value) || null;
   });
 
+  const isProfileLoaded = computed(() => activeProfileId.value !== null);
+
+  function getErrorMessage(error: unknown): string {
+    if (isAxiosError(error)) {
+      return error.response?.data?.error || `Błąd HTTP ${error.response?.status} podczas operacji.`;
+    } else if (error instanceof Error) {
+      return error.message;
+    }
+    return 'Nieznany błąd serwera. Sprawdź konsolę.';
+  }
+
   // --- ACTIONS ---
+  function setActiveProfile(id: number | null) {
+    if (activeProfileId.value !== id) {
+      activeProfileId.value = id;
+      if (id !== null) {
+        localStorage.setItem(ACTIVE_PROFILE_KEY, String(id));
+      } else {
+        localStorage.removeItem(ACTIVE_PROFILE_KEY);
+      }
+      console.log(`Aktywowano profil ID: ${id}`);
+    }
+  }
+
   async function fetchProfiles() {
     try {
-      const response = await http.get('/profiles');
+      const response = await http.get<Profile[]>('/profiles');
       allProfiles.value = response.data;
-
-      if (
-        allProfiles.value.length > 0 &&
-        activeProfileId.value === null &&
-        allProfiles.value[0] !== undefined &&
-        allProfiles.value[0].id_profile !== undefined
-      ) {
-        setActiveProfile(allProfiles.value[0].id_profile);
+      const profilesExist = allProfiles.value.length > 0;
+      const currentActiveExists =
+        profilesExist && allProfiles.value.some((p) => p.id_profile === activeProfileId.value);
+      if (!currentActiveExists && profilesExist) {
+        const firstProfile = allProfiles.value[0];
+        if (firstProfile) {
+          setActiveProfile(firstProfile.id_profile);
+        }
+      } else if (!profilesExist) {
+        setActiveProfile(null);
       }
     } catch (error) {
       console.error('Błąd podczas pobierania profili:', error);
@@ -42,43 +69,60 @@ export const useProfileStore = defineStore('profile', () => {
     }
   }
 
-  function setActiveProfile(id: number | null) {
-    if (activeProfileId.value !== id) {
-      activeProfileId.value = id;
-      // Tu można zaimplementować np. przeładowanie danych dla nowego profilu
-      console.log(`Aktywowano profil ID: ${id}`);
-    }
-  }
-
   async function addProfile(profileName: string) {
-    // if (!profileName) throw new Error('Nazwa profilu nie może być pusta.');
     try {
       const response = await http.post('/profiles', {
         profileName: profileName,
       });
+
       const data = response.data;
-      const newProfileId = data.profileId;
-      const successMessage = data.message;
-      const newProfile = {
-        id_profile: newProfileId,
-        name: profileName,
-      };
+      const newProfile: Profile = data.profile
+        ? data.profile
+        : {
+            id_profile: data.profileId || -1,
+            name: profileName,
+          };
+
       allProfiles.value.push(newProfile);
-      setActiveProfile(newProfileId);
-      console.log(`Pomyślnie dodano profil: ${newProfile.name}`);
-      return { profile: newProfile, message: successMessage };
+      setActiveProfile(newProfile.id_profile);
+
+      return {
+        success: true,
+        message: data.message || `Pomyślnie dodano profil: ${newProfile.name}`,
+      };
     } catch (error) {
-      let errorMessage: string = 'Nieznany błąd serwera. Sprawdź konsolę.';
-      if (isAxiosError(error)) {
-        errorMessage = error.response?.data?.error || `Błąd HTTP ${error.response?.status}.`;
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      throw new Error(errorMessage);
+      throw new Error(getErrorMessage(error));
     }
   }
 
-  const isProfileLoaded = computed(() => activeProfileId.value !== null);
+  async function updateProfile(profileId: number, newName: string) {
+    try {
+      const url = `/profiles/${profileId}`;
+      await http.put(url, { profileName: newName });
+      const profileToUpdate = allProfiles.value.find((p) => p.id_profile === profileId);
+      if (profileToUpdate) {
+        profileToUpdate.name = newName;
+      }
+      return { success: true, message: `Nazwa profilu została zaktualizowana na: ${newName}` };
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
+  }
+
+  async function deleteProfile(profileId: number) {
+    try {
+      const url = `/profiles/${profileId}`;
+      await http.delete(url);
+      allProfiles.value = allProfiles.value.filter((p) => p.id_profile !== profileId);
+      if (activeProfileId.value === profileId) {
+        const newActiveProfileId = allProfiles.value[0]?.id_profile ?? null;
+        setActiveProfile(newActiveProfileId);
+      }
+      return { success: true, message: `Profil z ID ${profileId} został usunięty.` };
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
+  }
 
   return {
     allProfiles,
@@ -88,5 +132,7 @@ export const useProfileStore = defineStore('profile', () => {
     fetchProfiles,
     setActiveProfile,
     addProfile,
+    updateProfile,
+    deleteProfile,
   };
 });
