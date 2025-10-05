@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { useProfileStore } from '@/stores/profileStore';
 import { useRouter } from 'vue-router';
-import { isAxiosError } from 'axios';
+// import { isAxiosError } from 'axios';
 
 // Użycie propsa 'id' przekazanego z routera
 const props = defineProps<{
@@ -33,77 +33,75 @@ if (!profileToEdit.value || profileToEdit.value.id_profile.toString() !== props.
 
 // --- LOGIKA AKCJI ---
 
-// W przyszłości, tu będziesz mieć akcję PUT/PATCH
+/**
+ * Obsługuje aktualizację nazwy profilu (PUT).
+ */
 const handleNameUpdate = async () => {
   if (!newProfileName.value.trim() || !profileToEdit.value) {
     message.value = { text: 'Nazwa profilu nie może być pusta.', type: 'error' };
     return;
   }
 
-  // --- MOCK AKCJI AKTUALIZACJI ---
   isSubmitting.value = true;
   message.value = { text: '', type: null };
 
   try {
-    // ZAKŁADAMY, ŻE AKCJA PUT JEST ZDEFINIOWANA W STORE
-    // await profileStore.updateProfile(profileToEdit.value.id_profile, newProfileName.value.trim());
+    const result = await profileStore.updateProfile(
+      profileToEdit.value.id_profile,
+      newProfileName.value.trim(),
+    );
 
-    // Na razie tylko symulacja
-    const oldName = profileToEdit.value.name;
-    profileToEdit.value.name = newProfileName.value.trim(); // Lokalna zmiana w Store
-
-    message.value = {
-      text: `Pomyślnie zmieniono nazwę z '${oldName}' na '${newProfileName.value}' (Symulacja POST/PUT)`,
-      type: 'success',
-    };
-  } catch (error) {
-    let errorMessage: string = 'Błąd podczas aktualizacji.';
-    if (isAxiosError(error)) {
-      errorMessage = error.response?.data?.error || `Błąd HTTP ${error.response?.status}.`;
+    // Wyświetlanie komunikatu z Store'a (result.message)
+    if (result.success) {
+      // Ponieważ Store sam zaktualizował stan (profileToEdit), wystarczy wyświetlić komunikat
+      message.value = {
+        text: result.message,
+        type: 'success',
+      };
+      // Dodatkowe bezpieczeństwo: zsynchronizuj pole formularza z nową wartością z Store'a
+      newProfileName.value = profileToEdit.value.name;
+    } else {
+      // W przypadku błędu serwera
+      message.value = { text: result.message, type: 'error' };
     }
-    message.value = { text: errorMessage, type: 'error' };
+  } catch (error) {
+    // Błąd rzucony przez Store (np. błąd Axios)
+    message.value = { text: (error as Error).message, type: 'error' };
   } finally {
     isSubmitting.value = false;
   }
 };
 
-// W przyszłości, tu będziesz mieć akcję DELETE
+/**
+ * Obsługuje usuwanie profilu (DELETE).
+ */
 const handleDelete = async () => {
+  if (!profileToEdit.value) return;
+
   if (
     !confirm(
-      `Czy na pewno chcesz usunąć profil: ${profileToEdit.value?.name}? Ta operacja jest nieodwracalna!`,
+      `Czy na pewno chcesz usunąć profil: ${profileToEdit.value.name}? Ta operacja jest nieodwracalna!`,
     )
   ) {
     return;
   }
 
-  // --- MOCK AKCJI USUWANIA ---
   isSubmitting.value = true;
+  message.value = { text: '', type: null };
 
   try {
-    // ZAKŁADAMY, ŻE AKCJA DELETE JEST ZDEFINIOWANA W STORE
-    // await profileStore.deleteProfile(profileToEdit.value.id_profile);
+    const result = await profileStore.deleteProfile(profileToEdit.value.id_profile);
 
-    // Na razie tylko symulacja
-    profileStore.setActiveProfile(null); // Dezaktywujemy
-    // Usuwamy z listy (w prawdziwej apce to robi backend/fetchProfiles)
-    profileStore.allProfiles = profileStore.allProfiles.filter(
-      (p) => p.id_profile.toString() !== props.id,
-    );
-
-    message.value = {
-      text: `Profil '${profileToEdit.value?.name}' został usunięty (Symulacja DELETE).`,
-      type: 'success',
-    };
-
-    // Przekierowanie na dashboard po udanym usunięciu
-    router.push({ name: 'dashboard' });
-  } catch (error) {
-    let errorMessage: string = 'Błąd podczas usuwania.';
-    if (isAxiosError(error)) {
-      errorMessage = error.response?.data?.error || `Błąd HTTP ${error.response?.status}.`;
+    // Wyświetlanie komunikatu z Store'a
+    if (result.success) {
+      // Jeśli usunięcie jest udane, Store sam przełączy aktywny profil,
+      // więc po prostu przekierowujemy na dashboard
+      await router.push({ name: 'dashboard' });
+    } else {
+      message.value = { text: result.message, type: 'error' };
     }
-    message.value = { text: errorMessage, type: 'error' };
+  } catch (error) {
+    message.value = { text: (error as Error).message, type: 'error' };
   } finally {
     isSubmitting.value = false;
   }

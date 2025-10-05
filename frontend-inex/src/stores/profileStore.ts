@@ -28,7 +28,9 @@ export const useProfileStore = defineStore('profile', () => {
 
   function getErrorMessage(error: unknown): string {
     if (isAxiosError(error)) {
-      return error.response?.data?.error || `Błąd HTTP ${error.response?.status} podczas operacji.`;
+      return (
+        error.response?.data?.message || `Błąd HTTP ${error.response?.status} podczas operacji.`
+      );
     } else if (error instanceof Error) {
       return error.message;
     }

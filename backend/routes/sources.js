@@ -75,7 +75,7 @@ router.post('/', async (req, res) => {
     if (await checkSourceNameExists(sourceName, profileId, null)) {
       await db.runPromise('ROLLBACK;');
       return res.status(409).json({
-        error: 'Typ dochodu o tej nazwie już istnieje w tym profilu.',
+        message: 'Typ dochodu o tej nazwie już istnieje w tym profilu.',
       });
     }
     const sql = 'INSERT INTO sources (name, fk_profile) VALUES (?, ?)';
@@ -87,7 +87,7 @@ router.post('/', async (req, res) => {
     });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -117,7 +117,7 @@ router.get('/', async (req, res) => {
     const resultSources = await db.allPromise(sql, [profileId]);
     return res.status(200).json(resultSources);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -158,7 +158,7 @@ router.get('/:sourceId', async (req, res) => {
     }
     return res.status(200).json(resultSource);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -201,7 +201,9 @@ router.put('/:sourceId', async (req, res) => {
       await db.runPromise('ROLLBACK;');
       return res
         .status(409)
-        .json({ error: 'Typ dochou o tej nazwie już istnieje w tym profilu.' });
+        .json({
+          message: 'Typ dochou o tej nazwie już istnieje w tym profilu.',
+        });
     }
     sql = 'UPDATE sources SET name = ? WHERE id_source = ? AND fk_profile = ?';
     const updateResult = await db.runPromise(sql, [
@@ -221,7 +223,7 @@ router.put('/:sourceId', async (req, res) => {
       .json({ message: 'Typ dochodu zaktualizowany pomyślnie.' });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
@@ -278,7 +280,7 @@ router.delete('/:sourceId', async (req, res) => {
       .json({ message: 'Typ dochodu został usunięty pomyślnie.' });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
