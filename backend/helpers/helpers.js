@@ -167,8 +167,9 @@ function validateAmount(amount) {
   ) {
     return false;
   }
-  const isDecimalValid = Number.isInteger(parsedAmount * 100);
-  return isDecimalValid;
+  const multipliedAndRounded = Math.round(parsedAmount * 100);
+  const reCalculatedAmount = multipliedAndRounded / 100;
+  return parsedAmount === reCalculatedAmount;
 }
 
 function validateDate(date) {
