@@ -1,25 +1,112 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useItemStore } from '@/stores/itemStore';
 
-const editItem = (id: number) => {
-  console.log(`Edycja pozycji ID: ${id}`);
-  alert(`Edycja pozycji ID: ${id} (W BUDOWIE)`);
+const itemStore = useItemStore();
+
+// --- STAN EDYCJI ---
+const editingItemId = ref<number | null>(null);
+const tempItemName = ref('');
+
+// --- KOMUNIKATY ZWROTNE ---
+const message = ref<{ text: string; type: 'success' | 'error' | null }>({ text: '', type: null });
+
+/**
+ * Rozpoczyna tryb edycji dla nazwy pozycji.
+ */
+const startEdit = (id: number, currentName: string) => {
+  message.value = { text: '', type: null };
+  editingItemId.value = id;
+  tempItemName.value = currentName;
 };
 
-const deleteItem = (id: number) => {
-  console.log(`Usuwanie pozycji ID: ${id}`);
-  if (confirm(`Czy na pewno chcesz usunąć Pozycję ID: ${id}?`)) {
-    alert(`Pozycja ID: ${id} usunięta! (W BUDOWIE)`);
+/**
+ * Anuluje tryb edycji.
+ */
+const cancelEdit = () => {
+  editingItemId.value = null;
+  tempItemName.value = '';
+  message.value = { text: '', type: null };
+};
+
+/**
+ * Zapisuje zaktualizowaną nazwę pozycji (PUT).
+ */
+const saveEdit = async (itemId: number, profileId: number) => {
+  const newName = tempItemName.value.trim();
+  // 1. POBIERAMY PEŁNY OBIEKT POZYCJI
+  const currentItem = itemStore.items.find((i) => i.id_item === itemId);
+
+  if (!currentItem) return;
+
+  if (!newName) {
+    message.value = { text: 'Nazwa pozycji nie może być pusta.', type: 'error' };
+    return;
+  }
+
+  if (newName === currentItem.name) {
+    cancelEdit();
+    return;
+  }
+
+  message.value = { text: 'Trwa zapisywanie...', type: null };
+
+  try {
+    // 2. PRZEKAZUJEMY WSZYSTKIE WYMAGANE POLA DO STORE'A
+    const result = await itemStore.updateItem({
+      id_item: itemId,
+      newName: newName,
+      fk_profile: profileId,
+      // PRAWIDŁOWE POLA DLA ZAPYTANIA PUT:
+      fk_category: currentItem.fk_category, // Wartość z aktualnego stanu
+      label_ids: currentItem.label_ids, // Wartość z aktualnego stanu
+    });
+
+    message.value = { text: result.message, type: 'success' };
+    cancelEdit();
+  } catch (error) {
+    message.value = { text: (error as Error).message, type: 'error' };
   }
 };
 
-const itemStore = useItemStore();
+/**
+ * Obsługuje usuwanie pozycji (DELETE).
+ */
+const confirmDelete = async (itemId: number, itemName: string, profileId: number) => {
+  if (
+    !confirm(
+      `Czy na pewno chcesz usunąć pozycję wydatków: "${itemName}"? Ta operacja jest nieodwracalna!`,
+    )
+  ) {
+    return;
+  }
+
+  message.value = { text: 'Trwa usuwanie...', type: null };
+
+  try {
+    const result = await itemStore.deleteItem(itemId, profileId);
+
+    // Sukces jest obsługiwany przez Pinia Store
+    message.value = { text: result.message, type: 'success' };
+  } catch (error) {
+    message.value = { text: (error as Error).message, type: 'error' };
+  }
+};
 </script>
 
 <template>
   <div class="table-container item-list-container">
     <h3 class="form-title item-title-border">Pozycje Wydatków (Items)</h3>
-
+    <div
+      v-if="message.text"
+      :class="{
+        'bg-green-100 border-green-400 text-green-700': message.type === 'success',
+        'bg-red-100 border-red-400 text-red-700': message.type === 'error',
+      }"
+      class="p-3 border rounded-md mb-4 text-sm"
+    >
+      {{ message.text }}
+    </div>
     <p class="item-summary-box">
       Liczba pozycji w bazie:
       <span class="item-summary-amount">{{ itemStore.itemCount }}</span>
@@ -43,16 +130,55 @@ const itemStore = useItemStore();
         <tbody>
           <tr v-for="item in itemStore.items" :key="item.id_item" class="table-row item-row-hover">
             <td class="table-cell">{{ item.id_item }}</td>
-            <td class="table-cell font-medium">{{ item.name }}</td>
+
+            <td class="table-cell font-medium">
+              <template v-if="editingItemId === item.id_item">
+                <input
+                  type="text"
+                  v-model="tempItemName"
+                  @keyup.enter="saveEdit(item.id_item, item.fk_profile)"
+                  class="form-input"
+                  style="width: 90%; padding: 0.3rem"
+                />
+              </template>
+              <template v-else>
+                {{ item.name }}
+              </template>
+            </td>
+
             <td class="table-cell font-medium">{{ item.category_name }}</td>
             <td class="table-cell">
               <span v-for="label in item.labels" :key="label" class="item-label-badge">
                 {{ label }}
               </span>
             </td>
+
             <td class="table-cell actions-cell">
-              <button @click="editItem(item.id_item)" class="btn-action btn-edit">Edytuj</button>
-              <button @click="deleteItem(item.id_item)" class="btn-action btn-delete">Usuń</button>
+              <template v-if="editingItemId === item.id_item">
+                <button
+                  @click="saveEdit(item.id_item, item.fk_profile)"
+                  class="btn-action btn-edit-save mr-2"
+                >
+                  Zapisz
+                </button>
+                <button @click="cancelEdit" class="btn-action btn-secondary-small">Anuluj</button>
+              </template>
+              <template v-else>
+                <button
+                  @click="startEdit(item.id_item, item.name)"
+                  class="btn-action btn-edit mr-2"
+                  :disabled="!!editingItemId"
+                >
+                  Edytuj
+                </button>
+                <button
+                  @click="confirmDelete(item.id_item, item.name, item.fk_profile)"
+                  class="btn-action btn-delete"
+                  :disabled="!!editingItemId"
+                >
+                  Usuń
+                </button>
+              </template>
             </td>
           </tr>
         </tbody>
