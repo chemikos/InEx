@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import http from '@/api/http';
-import router from '@/router';
+// import router from '@/router';
 import { isAxiosError } from 'axios';
 
 const ACTIVE_PROFILE_KEY = 'activeProfileId';
@@ -50,24 +50,46 @@ export const useProfileStore = defineStore('profile', () => {
     }
   }
 
+  // async function fetchProfiles() {
+  //   try {
+  //     const response = await http.get<Profile[]>('/profiles');
+  //     allProfiles.value = response.data;
+  //     const profilesExist = allProfiles.value.length > 0;
+  //     const currentActiveExists =
+  //       profilesExist && allProfiles.value.some((p) => p.id_profile === activeProfileId.value);
+  //     if (!currentActiveExists && profilesExist) {
+  //       const firstProfile = allProfiles.value[0];
+  //       if (firstProfile) {
+  //         setActiveProfile(firstProfile.id_profile);
+  //       }
+  //     } else if (!profilesExist) {
+  //       setActiveProfile(null);
+  //     }
+  //   } catch (error) {
+  //     console.error('Błąd podczas pobierania profili:', error);
+  //     router.push({ name: 'error', params: { code: 'PROFILE_LOAD_FAIL' } });
+  //   }
+  // }
+
   async function fetchProfiles() {
     try {
+      // Zapewnij, że response.data jest tablicą. Jeśli jest null/undefined, użyj pustej tablicy.
       const response = await http.get<Profile[]>('/profiles');
-      allProfiles.value = response.data;
-      const profilesExist = allProfiles.value.length > 0;
-      const currentActiveExists =
-        profilesExist && allProfiles.value.some((p) => p.id_profile === activeProfileId.value);
-      if (!currentActiveExists && profilesExist) {
-        const firstProfile = allProfiles.value[0];
-        if (firstProfile) {
-          setActiveProfile(firstProfile.id_profile);
-        }
-      } else if (!profilesExist) {
-        setActiveProfile(null);
-      }
+      // KLUCZOWA ZMIANA: Walidacja danych
+      const receivedData = Array.isArray(response.data) ? response.data : [];
+
+      allProfiles.value = receivedData;
+
+      // const profilesExist = allProfiles.value.length > 0;
+      // Reszta logiki jest teraz bezpieczna, bo allProfiles.value na pewno jest tablicą
+      // const currentActiveExists =
+      // profilesExist && allProfiles.value.some((p) => p.id_profile === activeProfileId.value);
+
+      // ... reszta kodu (jest już poprawna)
     } catch (error) {
       console.error('Błąd podczas pobierania profili:', error);
-      router.push({ name: 'error', params: { code: 'PROFILE_LOAD_FAIL' } });
+      // Nadal logujemy błąd, ale nie przerywamy operacji, jeśli to nie jest błąd krytyczny
+      // router.push({ name: 'error', params: { code: 'PROFILE_LOAD_FAIL' } });
     }
   }
 

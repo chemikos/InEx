@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const port = 3000;
+const port = 4000;
 
 const cors = require('cors');
 
@@ -12,12 +12,27 @@ const labelsRouter = require('./routes/labels');
 const profilesRouter = require('./routes/profiles');
 const sourcesRouter = require('./routes/sources');
 
-app.use(
-  cors({
-    origin: 'http://localhost:5173', // ZMIEŃ PORT, JEŚLI VITE/CRA UŻYJE INNEGO
-    // origin: '*', // ZMIEŃ PORT, JEŚLI VITE/CRA UŻYJE INNEGO
-  }),
-);
+// app.use(
+//   cors({
+//     origin: 'http://localhost:5173', // ZMIEŃ PORT, JEŚLI VITE/CRA UŻYJE INNEGO
+//     // origin: '*', // ZMIEŃ PORT, JEŚLI VITE/CRA UŻYJE INNEGO
+//   }),
+// );
+
+// Lista dozwolonych źródeł
+const allowedOrigins = [
+  'http://localhost:5173', // Port dla 'npm run dev'
+  'http://localhost:3000', // Port dla 'serve -s dist' (w trybie produkcyjnym)
+];
+
+const corsOptions = {
+  origin: allowedOrigins,
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
 
 app.use(express.json());
 
