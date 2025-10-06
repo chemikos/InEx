@@ -1,35 +1,131 @@
 <script setup lang="ts">
-import { useIncomeStore } from '@/stores/incomeStore';
-const editIncome = (id: number) => {
-  console.log(`Edycja wpłaty ID: ${id}`);
-  alert(`Edycja wpłaty ID: ${id} (W BUDOWIE)`);
+import { ref, computed } from 'vue';
+import { useIncomeStore, type Income } from '@/stores/incomeStore';
+import { useProfileStore } from '@/stores/profileStore';
+
+const incomeStore = useIncomeStore();
+const profileStore = useProfileStore();
+
+const activeProfileId = computed(() => profileStore.activeProfileId || 0);
+
+// --- STAN EDYCJI ---
+const editingIncomeId = ref<number | null>(null);
+const tempAmount = ref<number | null>(null);
+const tempDate = ref('');
+
+// --- KOMUNIKATY ZWROTNE ---
+const message = ref<{ text: string; type: 'success' | 'error' | null }>({ text: '', type: null });
+
+/**
+ * Rozpoczyna tryb edycji dla wiersza wpłaty (tylko Kwota i Data).
+ */
+const startEdit = (income: Income) => {
+  message.value = { text: '', type: null };
+  editingIncomeId.value = income.id_income;
+  tempAmount.value = income.amount;
+  tempDate.value = income.date.slice(0, 10);
 };
 
-const deleteIncome = (id: number) => {
-  console.log(`Usuwanie wpłaty ID: ${id}`);
-  if (confirm(`Czy na pewno chcesz usunąć Wpłatę ID: ${id}?`)) {
-    alert(`Wpłata ID: ${id} usunięta! (W BUDOWIE)`);
+/**
+ * Anuluje tryb edycji.
+ */
+const cancelEdit = () => {
+  editingIncomeId.value = null;
+  message.value = { text: '', type: null };
+};
+
+/**
+ * Zapisuje zaktualizowaną wpłatę (PUT) - tylko Kwota i Data.
+ */
+const saveEdit = async (income: Income) => {
+  const newAmount = tempAmount.value;
+  const newDate = tempDate.value;
+  const originalSourceId = income.id_source;
+
+  if (!newAmount || !newDate || !activeProfileId.value) {
+    message.value = { text: 'Kwota i data są wymagane.', type: 'error' };
+    return;
+  }
+
+  // Sprawdzenie, czy coś się zmieniło
+  const isChanged = newAmount !== income.amount || newDate !== income.date.slice(0, 10);
+
+  if (!isChanged) {
+    cancelEdit();
+    return;
+  }
+
+  message.value = { text: 'Trwa zapisywanie...', type: null };
+
+  try {
+    const updateData = {
+      id_income: income.id_income,
+      amount: newAmount,
+      date: newDate,
+      profileId: activeProfileId.value,
+      sourceId: originalSourceId, // Wysyłamy pierwotne sourceId, zgodnie z API
+    };
+
+    const result = await incomeStore.updateIncome(updateData);
+
+    message.value = { text: result.message, type: 'success' };
+    cancelEdit();
+  } catch (error) {
+    message.value = { text: (error as Error).message, type: 'error' };
   }
 };
 
-const incomeStore = useIncomeStore();
+/**
+ * Obsługuje usuwanie wpłaty (DELETE).
+ */
+const confirmDelete = async (incomeId: number, amount: number) => {
+  if (
+    !confirm(
+      `Czy na pewno chcesz usunąć wpłatę o kwocie ${amount.toFixed(2)} zł? Ta operacja jest nieodwracalna!`,
+    )
+  ) {
+    return;
+  }
+
+  if (!activeProfileId.value) {
+    message.value = { text: 'Brak aktywnego profilu, nie można usunąć.', type: 'error' };
+    return;
+  }
+
+  message.value = { text: 'Trwa usuwanie...', type: null };
+
+  try {
+    const result = await incomeStore.deleteIncome(incomeId, activeProfileId.value);
+    message.value = { text: result.message, type: 'success' };
+  } catch (error) {
+    message.value = { text: (error as Error).message, type: 'error' };
+  }
+};
 </script>
 
 <template>
   <div class="table-container income-list-container">
     <h3 class="form-title income-title-border">Ostatnie Wpłaty</h3>
 
+    <div
+      v-if="message.text"
+      :class="{
+        'bg-green-100 border-green-400 text-green-700': message.type === 'success',
+        'bg-red-100 border-red-400 text-red-700': message.type === 'error',
+      }"
+      class="p-3 border rounded-md mb-4 text-sm"
+    >
+      {{ message.text }}
+    </div>
     <p class="income-summary-box">
       Łączna kwota wpłat:
       <span class="income-summary-amount"
         >{{ parseFloat(incomeStore.totalIncomes).toFixed(2) }} zł</span
       >
     </p>
-
     <div v-if="incomeStore.isLoading" class="text-center p-8 text-gray-500">
       Ładowanie danych wpłat...
     </div>
-
     <div v-else-if="incomeStore.incomes.length > 0" class="overflow-x-auto">
       <table class="data-table">
         <thead>
@@ -48,22 +144,62 @@ const incomeStore = useIncomeStore();
             class="table-row income-row-hover"
           >
             <td class="table-cell">{{ income.id_income }}</td>
-            <td class="table-cell income-amount-cell">{{ income.amount.toFixed(2) }} PLN</td>
-            <td class="table-cell">{{ income.date.slice(0, 10) }}</td>
+
+            <td class="table-cell income-amount-cell">
+              <template v-if="editingIncomeId === income.id_income">
+                <input
+                  type="number"
+                  v-model.number="tempAmount"
+                  step="0.01"
+                  class="form-input"
+                  style="width: 80px; padding: 0.3rem"
+                />
+              </template>
+              <template v-else> {{ income.amount.toFixed(2) }} PLN </template>
+            </td>
+
+            <td class="table-cell">
+              <template v-if="editingIncomeId === income.id_income">
+                <input
+                  type="date"
+                  v-model="tempDate"
+                  class="form-input"
+                  style="width: 120px; padding: 0.3rem"
+                />
+              </template>
+              <template v-else>
+                {{ income.date.slice(0, 10) }}
+              </template>
+            </td>
             <td class="table-cell">{{ income.source_name }}</td>
             <td class="table-cell actions-cell">
-              <button @click="editIncome(income.id_income)" class="btn-action btn-edit">
-                Edytuj
-              </button>
-              <button @click="deleteIncome(income.id_income)" class="btn-action btn-delete-income">
-                Usuń
-              </button>
+              <template v-if="editingIncomeId === income.id_income">
+                <button @click="saveEdit(income)" class="btn-action btn-edit-save mr-2">
+                  Zapisz
+                </button>
+                <button @click="cancelEdit" class="btn-action btn-secondary-small">Anuluj</button>
+              </template>
+              <template v-else>
+                <button
+                  @click="startEdit(income)"
+                  class="btn-action btn-edit mr-2"
+                  :disabled="!!editingIncomeId"
+                >
+                  Edytuj
+                </button>
+                <button
+                  @click="confirmDelete(income.id_income, income.amount)"
+                  class="btn-action btn-delete-income"
+                  :disabled="!!editingIncomeId"
+                >
+                  Usuń
+                </button>
+              </template>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-
     <div v-else class="text-center py-4 text-gray-500 border p-3 rounded">
       Brak wpłat do wyświetlenia dla tego profilu.
     </div>

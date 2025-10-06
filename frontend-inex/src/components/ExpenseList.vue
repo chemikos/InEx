@@ -1,25 +1,139 @@
 <script setup lang="ts">
-import { useExpenseStore } from '@/stores/expenseStore';
+import { ref, computed } from 'vue';
+import { useExpenseStore, type Expense } from '@/stores/expenseStore';
+import { useProfileStore } from '@/stores/profileStore';
+// useItemStore nie jest już potrzebne w logice edycji, ale może być używane w innych miejscach
+// import { useItemStore } from '@/stores/itemStore';
 
-const editExpense = (id: number) => {
-  console.log(`Edycja wydatku ID: ${id}`);
-  alert(`Edycja wydatku ID: ${id} (W BUDOWIE)`);
+const expenseStore = useExpenseStore();
+const profileStore = useProfileStore();
+// const itemStore = useItemStore(); // Komentujemy lub usuwamy, jeśli niepotrzebne
+
+const activeProfileId = computed(() => profileStore.activeProfileId || 0);
+
+// --- STAN EDYCJI ---
+const editingExpenseId = ref<number | null>(null);
+const tempAmount = ref<number | null>(null);
+const tempDate = ref('');
+// const tempItemId = ref<number | null>(null); // Usuwamy stan dla ItemId
+
+// --- KOMUNIKATY ZWROTNE ---
+const message = ref<{ text: string; type: 'success' | 'error' | null }>({ text: '', type: null });
+
+/**
+ * Rozpoczyna tryb edycji dla wiersza wydatku (tylko Kwota i Data).
+ */
+const startEdit = (expense: Expense) => {
+  message.value = { text: '', type: null };
+  editingExpenseId.value = expense.id_expense;
+  tempAmount.value = expense.amount;
+  tempDate.value = expense.date.slice(0, 10);
+  // tempItemId.value = expense.fk_item; // Usuwamy
 };
 
-const deleteExpense = (id: number) => {
-  console.log(`Usuwanie wydatku ID: ${id}`);
-  if (confirm(`Czy na pewno chcesz usunąć Wydatek ID: ${id}?`)) {
-    alert(`Wydatek ID: ${id} usunięty! (W BUDOWIE)`);
+/**
+ * Anuluje tryb edycji.
+ */
+const cancelEdit = () => {
+  editingExpenseId.value = null;
+  message.value = { text: '', type: null };
+};
+
+/**
+ * Zapisuje zaktualizowany wydatek (PUT) - tylko Kwota i Data.
+ */
+const saveEdit = async (expense: Expense) => {
+  const newAmount = tempAmount.value;
+  const newDate = tempDate.value;
+
+  // Zachowujemy oryginalne itemId
+  const originalItemId = expense.fk_item;
+
+  if (!newAmount || !newDate || !activeProfileId.value) {
+    message.value = { text: 'Kwota i data są wymagane.', type: 'error' };
+    return;
+  }
+
+  // Sprawdzenie, czy coś się zmieniło
+  const isChanged = newAmount !== expense.amount || newDate !== expense.date.slice(0, 10);
+
+  if (!isChanged) {
+    cancelEdit();
+    return;
+  }
+
+  message.value = { text: 'Trwa zapisywanie...', type: null };
+
+  try {
+    // 1. DANE DO WYSŁANIA (UpdateExpenseData)
+    const updateData = {
+      id_expense: expense.id_expense,
+      amount: newAmount,
+      date: newDate,
+      profileId: activeProfileId.value,
+      itemId: originalItemId, // KLUCZOWA ZMIANA: Wysyłamy pierwotne itemId
+    };
+
+    // 2. DANE DLA LOKALNEGO ZAAKTUALIZOWANIA UI
+    // Zachowujemy oryginalne detale, bo Item się nie zmienił
+    const itemUIDetails = {
+      item_name: expense.item_name,
+      category_name: expense.category_name,
+      fk_category: expense.fk_category,
+      labels: expense.labels,
+      label_ids: expense.label_ids,
+    };
+
+    const result = await expenseStore.updateExpense(updateData, itemUIDetails);
+
+    message.value = { text: result.message, type: 'success' };
+    cancelEdit();
+  } catch (error) {
+    message.value = { text: (error as Error).message, type: 'error' };
   }
 };
 
-const expenseStore = useExpenseStore();
+/**
+ * Obsługuje usuwanie wydatku (DELETE).
+ */
+const confirmDelete = async (expenseId: number, amount: number) => {
+  if (
+    !confirm(
+      `Czy na pewno chcesz usunąć wydatek o kwocie ${amount.toFixed(2)} zł? Ta operacja jest nieodwracalna!`,
+    )
+  ) {
+    return;
+  }
+
+  if (!activeProfileId.value) {
+    message.value = { text: 'Brak aktywnego profilu, nie można usunąć.', type: 'error' };
+    return;
+  }
+
+  message.value = { text: 'Trwa usuwanie...', type: null };
+
+  try {
+    const result = await expenseStore.deleteExpense(expenseId, activeProfileId.value);
+    message.value = { text: result.message, type: 'success' };
+  } catch (error) {
+    message.value = { text: (error as Error).message, type: 'error' };
+  }
+};
 </script>
 
 <template>
   <div class="table-container expense-list-container">
     <h3 class="form-title expense-title-border">Ostatnie Wydatki</h3>
-
+    <div
+      v-if="message.text"
+      :class="{
+        'bg-green-100 border-green-400 text-green-700': message.type === 'success',
+        'bg-red-100 border-red-400 text-red-700': message.type === 'error',
+      }"
+      class="p-3 border rounded-md mb-4 text-sm"
+    >
+      {{ message.text }}
+    </div>
     <p class="expense-summary-box">
       Łączna kwota wydatków:
       <span class="expense-summary-amount"
@@ -49,23 +163,68 @@ const expenseStore = useExpenseStore();
             :key="expense.id_expense"
             class="table-row expense-row-hover"
           >
-            <td class="table-cell expense-amount-cell">-{{ expense.amount.toFixed(2) }}</td>
-            <td class="table-cell">{{ expense.date.slice(0, 10) }}</td>
-            <td class="table-cell">{{ expense.item_name }}</td>
-            <td class="table-cell font-semibold">{{ expense.category_name }}</td>
-            <td class="table-cell">
-              <span v-for="label in expense.labels" :key="label" class="expense-label-badge">
-                {{ label }}
-              </span>
-            </td>
-            <td class="table-cell actions-cell">
-              <button @click="editExpense(expense.id_expense)" class="btn-action btn-edit">
-                Edytuj
-              </button>
-              <button @click="deleteExpense(expense.id_expense)" class="btn-action btn-delete">
-                Usuń
-              </button>
-            </td>
+            <template v-if="editingExpenseId === expense.id_expense">
+              <td class="table-cell">
+                <input
+                  type="number"
+                  v-model.number="tempAmount"
+                  step="0.01"
+                  class="form-input"
+                  style="width: 80px; padding: 0.3rem"
+                />
+              </td>
+              <td class="table-cell">
+                <input
+                  type="date"
+                  v-model="tempDate"
+                  class="form-input"
+                  style="width: 120px; padding: 0.3rem"
+                />
+              </td>
+
+              <td class="table-cell">{{ expense.item_name }}</td>
+              <td class="table-cell font-semibold">{{ expense.category_name }}</td>
+              <td class="table-cell">
+                <span v-for="label in expense.labels" :key="label" class="expense-label-badge">
+                  {{ label }}
+                </span>
+              </td>
+
+              <td class="table-cell actions-cell">
+                <button @click="saveEdit(expense)" class="btn-action btn-edit-save mr-2">
+                  Zapisz
+                </button>
+                <button @click="cancelEdit" class="btn-action btn-secondary-small">Anuluj</button>
+              </td>
+            </template>
+
+            <template v-else>
+              <td class="table-cell expense-amount-cell">-{{ expense.amount.toFixed(2) }}</td>
+              <td class="table-cell">{{ expense.date.slice(0, 10) }}</td>
+              <td class="table-cell">{{ expense.item_name }}</td>
+              <td class="table-cell font-semibold">{{ expense.category_name }}</td>
+              <td class="table-cell">
+                <span v-for="label in expense.labels" :key="label" class="expense-label-badge">
+                  {{ label }}
+                </span>
+              </td>
+              <td class="table-cell actions-cell">
+                <button
+                  @click="startEdit(expense)"
+                  class="btn-action btn-edit mr-2"
+                  :disabled="!!editingExpenseId"
+                >
+                  Edytuj
+                </button>
+                <button
+                  @click="confirmDelete(expense.id_expense, expense.amount)"
+                  class="btn-action btn-delete"
+                  :disabled="!!editingExpenseId"
+                >
+                  Usuń
+                </button>
+              </td>
+            </template>
           </tr>
         </tbody>
       </table>

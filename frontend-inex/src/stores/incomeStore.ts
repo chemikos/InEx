@@ -5,7 +5,7 @@ import { ref, computed } from 'vue';
 import http from '@/api/http';
 import { isAxiosError } from 'axios';
 
-// Definicja typu dla Wpłaty (na podstawie Twojego response)
+// Definicja typu dla Wpłaty
 export interface Income {
   id_income: number;
   amount: number;
@@ -19,25 +19,42 @@ export interface NewIncomeData {
   profileId: number;
   sourceId: number;
 }
+// NOWY TYP DANYCH DLA AKTUALIZACJI
+export interface UpdateIncomeData {
+  id_income: number;
+  amount: number;
+  date: string;
+  profileId: number;
+  sourceId: number; // Musi być przekazane, choć na froncie nie edytujemy
+}
+
+// --- HELPER FUNKCJA DO OBSŁUGI BŁĘDÓW ---
+function getErrorMessage(error: unknown): string {
+  if (isAxiosError(error)) {
+    return (
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      `Błąd HTTP ${error.response?.status}.`
+    );
+  } else if (error instanceof Error) {
+    return error.message;
+  }
+  return 'Nieznany błąd serwera. Sprawdź konsolę.';
+}
 
 export const useIncomeStore = defineStore('income', () => {
   // --- STATE ---
   const incomes = ref<Income[]>([]);
-  const isLoading = ref(false);
+  const isLoading = ref(false); // --- GETTERS (Computed) ---
 
-  // --- GETTERS (Computed) ---
   const totalIncomes = computed(() => {
-    // Obliczanie sumy wpłat
     return incomes.value.reduce((sum, income) => sum + income.amount, 0).toFixed(2);
-  });
+  }); // --- ACTIONS ---
 
-  // --- ACTIONS ---
   async function fetchIncomes(profileId: number) {
     isLoading.value = true;
     try {
-      // Wywołanie endpointu GET /incomes?profileId=...
       const response = await http.get(`/incomes?profileId=${profileId}`);
-
       incomes.value = response.data as Income[];
     } catch (error) {
       console.error(`Błąd podczas pobierania wpłat dla profilu ${profileId}:`, error);
@@ -51,54 +68,85 @@ export const useIncomeStore = defineStore('income', () => {
     if (!incomeData.amount || !incomeData.date) throw new Error('Kwota i data są wymagane.');
 
     try {
-      // Wysyłanie żądania POST do endpointu /incomes
       const response = await http.post('/incomes', incomeData);
       const data = response.data;
 
       const newIncomeId = data.incomeId;
       const successMessage = data.message;
 
-      // W tym miejscu musimy założyć, że Store źródeł jest załadowany,
-      // aby znaleźć nazwę źródła do wyświetlenia w liście Incomes.
-      // Ponieważ nie mamy tu dostępu do sourceStore, uprościmy obiekt (tylko na potrzeby lokalnego wyświetlania):
       const newIncome = {
         id_income: newIncomeId,
         amount: incomeData.amount,
         date: incomeData.date,
         id_source: incomeData.sourceId,
-        // WAŻNE: source_name będzie na razie pusty lub ogólny!
-        // Najbezpieczniejszą opcją jest przeładowanie listy po udanym dodaniu.
-        source_name: 'Nowa wpłata (odśwież, aby zobaczyć nazwę)',
-      } as Income; // Rzutujemy na any, bo brakuje source_name !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        source_name: 'Nowa wpłata (odśwież, aby zobaczyć nazwę)', // Placeholder
+      } as Income;
 
-      // Dodajemy nową wpłatę do lokalnego stanu
-      incomes.value.push(newIncome);
-      // Zwykle, po dodaniu transakcji, warto przeładować listę:
-      // fetchIncomes(incomeData.profileId);
-
-      console.log(`Pomyślnie dodano wpłatę o wartości: ${incomeData.amount}`);
-
-      // Zwracamy obiekt z pełnym komunikatem sukcesu
+      incomes.value.unshift(newIncome);
       return { income: newIncome, message: successMessage };
     } catch (error) {
-      let errorMessage: string = 'Nieznany błąd serwera. Sprawdź konsolę.';
-
-      if (isAxiosError(error)) {
-        errorMessage = error.response?.data?.error || `Błąd HTTP ${error.response?.status}.`;
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-
-      throw new Error(errorMessage);
+      throw new Error(getErrorMessage(error));
     }
   }
 
-  // Zwrócenie stanu i akcji
+  /**
+   * Aktualizuje istniejącą wpłatę (PUT) - tylko Kwota i Data.
+   */
+  async function updateIncome(updateData: UpdateIncomeData) {
+    try {
+      const url = `/incomes/${updateData.id_income}`;
+
+      // Wysyłanie żądania PUT. Backend oczekuje amount, date, profileId, sourceId
+      await http.put(url, {
+        amount: updateData.amount,
+        date: updateData.date,
+        profileId: updateData.profileId,
+        sourceId: updateData.sourceId, // Zachowujemy oryginalne ID, które jest w updateData
+      });
+
+      // Aktualizacja stanu lokalnego
+      const incomeToUpdate = incomes.value.find((i) => i.id_income === updateData.id_income);
+      if (incomeToUpdate) {
+        incomeToUpdate.amount = updateData.amount;
+        incomeToUpdate.date = updateData.date;
+        // source_name i id_source zostają niezmienione
+      }
+
+      return {
+        success: true,
+        message: `Wpłata ID ${updateData.id_income} została zaktualizowana.`,
+      };
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
+  }
+
+  /**
+   * Usuwa wpłatę (DELETE).
+   */
+  async function deleteIncome(incomeId: number, profileId: number) {
+    try {
+      // WYSYŁANIE ZGODNE Z KONWENCJĄ: profileId w query stringu
+      const url = `/incomes/${incomeId}?profileId=${profileId}`;
+
+      await http.delete(url);
+
+      // Usunięcie ze stanu lokalnego
+      incomes.value = incomes.value.filter((i) => i.id_income !== incomeId);
+
+      return { success: true, message: `Wpłata ID ${incomeId} została usunięta.` };
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
+  } // Zwrócenie stanu i akcji
+
   return {
     incomes,
     isLoading,
     totalIncomes,
     fetchIncomes,
     addIncome,
+    updateIncome, // NOWA METODA
+    deleteIncome, // NOWA METODA
   };
 });

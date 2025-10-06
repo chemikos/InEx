@@ -23,28 +23,44 @@ export interface NewExpenseData {
   profileId: number;
   itemId: number;
 }
+// NOWY TYP DANYCH DLA AKTUALIZACJI
+export interface UpdateExpenseData {
+  id_expense: number;
+  amount: number;
+  date: string;
+  profileId: number;
+  itemId: number;
+}
+
+// --- HELPER FUNKCJA DO OBSŁUGI BŁĘDÓW ---
+function getErrorMessage(error: unknown): string {
+  if (isAxiosError(error)) {
+    // Używamy pola 'error' lub 'message' zgodnie z konwencją
+    return (
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      `Błąd HTTP ${error.response?.status}.`
+    );
+  } else if (error instanceof Error) {
+    return error.message;
+  }
+  return 'Nieznany błąd serwera. Sprawdź konsolę.';
+}
 
 export const useExpenseStore = defineStore('expense', () => {
   // --- STATE ---
   const expenses = ref<Expense[]>([]);
-  const isLoading = ref(false);
+  const isLoading = ref(false); // --- GETTERS (Computed) ---
 
-  // --- GETTERS (Computed) ---
   const totalExpenses = computed(() => {
     // Obliczanie sumy wydatków
     return expenses.value.reduce((sum, expense) => sum + expense.amount, 0).toFixed(2);
-  });
+  }); // --- ACTIONS ---
 
-  // --- ACTIONS ---
   async function fetchExpenses(profileId: number) {
     isLoading.value = true;
     try {
-      // Wywołanie endpointu GET /expenses?profileId=...
-      // Uwaga: Upewnij się, że Twój backend obsługuje filtrowanie dat,
-      // np. poprzez dodanie domyślnego zakresu, jeśli nie są podane w query.
       const response = await http.get(`/expenses?profileId=${profileId}`);
-
-      // Przyjmujemy, że API zwraca poprawnie przetworzone tablice dla labels/label_ids
       expenses.value = response.data as Expense[];
     } catch (error) {
       console.error(`Błąd podczas pobierania wydatków dla profilu ${profileId}:`, error);
@@ -60,53 +76,100 @@ export const useExpenseStore = defineStore('expense', () => {
     }
 
     try {
-      // Wysyłanie żądania POST do endpointu /expenses
       const response = await http.post('/expenses', expenseData);
-      const data = response.data;
-
-      const newExpenseId = data.expenseId;
-      const successMessage = data.message;
+      const data = response.data; // UWAGA: W idealnym świecie backend zwróciłby pełny obiekt Wydatku
+      // z poprawnymi nazwami kategorii/pozycji, aby uniknąć przeładowania.
 
       const newExpense: Expense = {
-        id_expense: newExpenseId,
+        id_expense: data.expenseId,
         amount: expenseData.amount,
         date: expenseData.date,
-        // Wypełniamy pola placeholderami, których wymaga interfejs Expense,
-        // a które zostaną uzupełnione po przeładowaniu danych.
-        item_name: 'Nowy wydatek (odśwież, aby zobaczyć szczegóły)',
-        category_name: 'N/A',
-        fk_item: expenseData.itemId, // Używamy pola itemId z danych wejściowych
-        fk_category: 0, // Musimy ustawić jakąś domyślną wartość lub wziąć z ItemStore (na razie 0)
+        item_name: 'Nowy wydatek (odśwież, aby zobaczyć szczegóły)', // Placeholder
+        category_name: 'N/A', // Placeholder
+        fk_item: expenseData.itemId,
+        fk_category: 0,
         labels: [],
         label_ids: [],
       };
 
-      // Dodajemy nowy wydatek do lokalnego stanu
-      expenses.value.push(newExpense);
-
-      console.log(`Pomyślnie dodano wydatek o wartości: ${expenseData.amount}`);
-
-      // Zwracamy obiekt z pełnym komunikatem sukcesu
-      return { expense: newExpense, message: successMessage };
+      expenses.value.unshift(newExpense); // Dodajemy na początek listy
+      return { expense: newExpense, message: data.message };
     } catch (error) {
-      let errorMessage: string = 'Nieznany błąd serwera. Sprawdź konsolę.';
-
-      if (isAxiosError(error)) {
-        errorMessage = error.response?.data?.error || `Błąd HTTP ${error.response?.status}.`;
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-
-      throw new Error(errorMessage);
+      throw new Error(getErrorMessage(error));
     }
   }
 
-  // Zwrócenie stanu i akcji
+  /**
+   * Aktualizuje istniejący wydatek (PUT).
+   */
+  async function updateExpense(
+    updateData: UpdateExpenseData,
+    itemDetails: Pick<
+      Expense,
+      'item_name' | 'category_name' | 'fk_category' | 'labels' | 'label_ids'
+    >,
+  ) {
+    try {
+      const url = `/expenses/${updateData.id_expense}`;
+
+      // Wysyłanie żądania PUT. Backend oczekuje amount, date, profileId, itemId
+      await http.put(url, {
+        amount: updateData.amount,
+        date: updateData.date,
+        profileId: updateData.profileId,
+        itemId: updateData.itemId,
+      });
+
+      // Aktualizacja stanu lokalnego
+      const expenseToUpdate = expenses.value.find((e) => e.id_expense === updateData.id_expense);
+      if (expenseToUpdate) {
+        expenseToUpdate.amount = updateData.amount;
+        expenseToUpdate.date = updateData.date;
+        expenseToUpdate.fk_item = updateData.itemId;
+
+        // Aktualizacja nazw pozycji/kategorii z przekazanych itemDetails
+        expenseToUpdate.item_name = itemDetails.item_name;
+        expenseToUpdate.category_name = itemDetails.category_name;
+        expenseToUpdate.fk_category = itemDetails.fk_category;
+        expenseToUpdate.labels = itemDetails.labels;
+        expenseToUpdate.label_ids = itemDetails.label_ids;
+      }
+
+      return {
+        success: true,
+        message: `Wydatek ID ${updateData.id_expense} został zaktualizowany.`,
+      };
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
+  }
+
+  /**
+   * Usuwa wydatek (DELETE).
+   */
+  async function deleteExpense(expenseId: number, profileId: number) {
+    try {
+      // WYSYŁANIE ZGODNE Z KONWENCJĄ: profileId w query stringu
+      const url = `/expenses/${expenseId}?profileId=${profileId}`;
+
+      await http.delete(url);
+
+      // Usunięcie ze stanu lokalnego
+      expenses.value = expenses.value.filter((e) => e.id_expense !== expenseId);
+
+      return { success: true, message: `Wydatek ID ${expenseId} został usunięty.` };
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
+  } // Zwrócenie stanu i akcji
+
   return {
     expenses,
     isLoading,
     totalExpenses,
     fetchExpenses,
     addExpense,
+    updateExpense, // NOWA METODA
+    deleteExpense, // NOWA METODA
   };
 });

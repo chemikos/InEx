@@ -113,7 +113,7 @@ const handleSubmit = async () => {
         <select id="itemId" v-model.number="selectedItemId" required class="form-select">
           <option :value="null" disabled>Wybierz pozycję (Item)...</option>
           <option v-for="item in itemStore.items" :key="item.id_item" :value="item.id_item">
-            {{ item.name }}
+            {{ item.name }} ({{ item.category_name }})
           </option>
         </select>
       </div>
