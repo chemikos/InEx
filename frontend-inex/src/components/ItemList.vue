@@ -1,23 +1,41 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useItemStore } from '@/stores/itemStore';
+import { useItemStore, type Item } from '@/stores/itemStore';
+import { useCategoryStore } from '@/stores/categoryStore';
+import { useLabelStore } from '@/stores/labelStore';
 
 const itemStore = useItemStore();
+const categoryStore = useCategoryStore();
+const labelStore = useLabelStore();
 
-// --- STAN EDYCJI ---
+// W CELU UŻYCIA KATEGORII/ETYKIET W FORMULARZU EDYCJI MUSIMY JE WCZEŚNIEJ POBRAĆ:
+// Załóżmy, że profileId jest dostępne z jakiegoś globalnego źródła (np. useAuthStore)
+// Na potrzeby testu użyjemy stałej 1. Zmień to na faktyczne profileId w Twojej aplikacji!
+const MOCK_PROFILE_ID = 1;
+
+// Uruchomienie pobierania, jeśli dane nie są załadowane
+categoryStore.fetchCategories(MOCK_PROFILE_ID);
+labelStore.fetchLabels(MOCK_PROFILE_ID);
+
+// --- STAN PEŁNEJ EDYCJI ---
 const editingItemId = ref<number | null>(null);
 const tempItemName = ref('');
+// Pola do przechowywania ID dla selectów
+const editingCategoryRef = ref<number | null>(null);
+const editingLabelsRef = ref<number[]>([]);
 
 // --- KOMUNIKATY ZWROTNE ---
 const message = ref<{ text: string; type: 'success' | 'error' | null }>({ text: '', type: null });
 
 /**
- * Rozpoczyna tryb edycji dla nazwy pozycji.
+ * Rozpoczyna tryb edycji, ustawiając wszystkie edytowalne wartości.
  */
-const startEdit = (id: number, currentName: string) => {
+const startEdit = (item: Item) => {
   message.value = { text: '', type: null };
-  editingItemId.value = id;
-  tempItemName.value = currentName;
+  editingItemId.value = item.id_item;
+  tempItemName.value = item.name;
+  editingCategoryRef.value = item.fk_category;
+  editingLabelsRef.value = [...item.label_ids]; // Kopiujemy tablicę, aby unikać mutacji
 };
 
 /**
@@ -26,25 +44,32 @@ const startEdit = (id: number, currentName: string) => {
 const cancelEdit = () => {
   editingItemId.value = null;
   tempItemName.value = '';
+  editingCategoryRef.value = null;
+  editingLabelsRef.value = [];
   message.value = { text: '', type: null };
 };
 
 /**
- * Zapisuje zaktualizowaną nazwę pozycji (PUT).
+ * Zapisuje zaktualizowane dane pozycji (PUT).
  */
-const saveEdit = async (itemId: number, profileId: number) => {
+const saveEdit = async (item: Item) => {
   const newName = tempItemName.value.trim();
-  // 1. POBIERAMY PEŁNY OBIEKT POZYCJI
-  const currentItem = itemStore.items.find((i) => i.id_item === itemId);
+  const newCategoryId = editingCategoryRef.value;
+  const newLabelIds = editingLabelsRef.value;
 
-  if (!currentItem) return;
-
-  if (!newName) {
-    message.value = { text: 'Nazwa pozycji nie może być pusta.', type: 'error' };
+  if (!newName || !newCategoryId) {
+    message.value = { text: 'Nazwa pozycji i kategoria są wymagane.', type: 'error' };
     return;
   }
 
-  if (newName === currentItem.name) {
+  // Sprawdzenie, czy faktycznie coś się zmieniło, aby uniknąć niepotrzebnego zapytania
+  const isNameChanged = newName !== item.name;
+  const isCategoryChanged = newCategoryId !== item.fk_category;
+  const areLabelsChanged =
+    newLabelIds.length !== item.label_ids.length ||
+    newLabelIds.some((id) => !item.label_ids.includes(id));
+
+  if (!isNameChanged && !isCategoryChanged && !areLabelsChanged) {
     cancelEdit();
     return;
   }
@@ -52,15 +77,27 @@ const saveEdit = async (itemId: number, profileId: number) => {
   message.value = { text: 'Trwa zapisywanie...', type: null };
 
   try {
-    // 2. PRZEKAZUJEMY WSZYSTKIE WYMAGANE POLA DO STORE'A
     const result = await itemStore.updateItem({
-      id_item: itemId,
+      id_item: item.id_item,
       newName: newName,
-      fk_profile: profileId,
-      // PRAWIDŁOWE POLA DLA ZAPYTANIA PUT:
-      fk_category: currentItem.fk_category, // Wartość z aktualnego stanu
-      label_ids: currentItem.label_ids, // Wartość z aktualnego stanu
+      fk_profile: item.fk_profile,
+      fk_category: newCategoryId, // Nowe ID kategorii
+      label_ids: newLabelIds, // Nowe ID etykiet
     });
+
+    // Ręczna aktualizacja stanu lokalnego, by natychmiast zobaczyć zmiany
+    const itemToUpdate = itemStore.items.find((i) => i.id_item === item.id_item);
+    if (itemToUpdate) {
+      itemToUpdate.name = newName;
+      itemToUpdate.fk_category = newCategoryId;
+      itemToUpdate.label_ids = newLabelIds;
+      // Aktualizacja nazw dla wyświetlania w tabeli (tylko dla spójności UI)
+      itemToUpdate.category_name =
+        categoryStore.categories.find((c) => c.id_category === newCategoryId)?.name || 'N/A';
+      itemToUpdate.labels = labelStore.labels
+        .filter((l) => newLabelIds.includes(l.id_label))
+        .map((l) => l.name);
+    }
 
     message.value = { text: result.message, type: 'success' };
     cancelEdit();
@@ -85,8 +122,6 @@ const confirmDelete = async (itemId: number, itemName: string, profileId: number
 
   try {
     const result = await itemStore.deleteItem(itemId, profileId);
-
-    // Sukces jest obsługiwany przez Pinia Store
     message.value = { text: result.message, type: 'success' };
   } catch (error) {
     message.value = { text: (error as Error).message, type: 'error' };
@@ -136,7 +171,7 @@ const confirmDelete = async (itemId: number, itemName: string, profileId: number
                 <input
                   type="text"
                   v-model="tempItemName"
-                  @keyup.enter="saveEdit(item.id_item, item.fk_profile)"
+                  @keyup.enter="saveEdit(item)"
                   class="form-input"
                   style="width: 90%; padding: 0.3rem"
                 />
@@ -146,26 +181,57 @@ const confirmDelete = async (itemId: number, itemName: string, profileId: number
               </template>
             </td>
 
-            <td class="table-cell font-medium">{{ item.category_name }}</td>
+            <td class="table-cell font-medium">
+              <template v-if="editingItemId === item.id_item">
+                <select v-model="editingCategoryRef" class="form-select" style="padding: 0.3rem">
+                  <option
+                    v-for="cat in categoryStore.categories"
+                    :key="cat.id_category"
+                    :value="cat.id_category"
+                  >
+                    {{ cat.name }}
+                  </option>
+                </select>
+              </template>
+              <template v-else>
+                {{ item.category_name }}
+              </template>
+            </td>
+
             <td class="table-cell">
-              <span v-for="label in item.labels" :key="label" class="item-label-badge">
-                {{ label }}
-              </span>
+              <template v-if="editingItemId === item.id_item">
+                <select
+                  multiple
+                  v-model="editingLabelsRef"
+                  class="form-select"
+                  style="height: 60px"
+                >
+                  <option
+                    v-for="label in labelStore.labels"
+                    :key="label.id_label"
+                    :value="label.id_label"
+                  >
+                    {{ label.name }}
+                  </option>
+                </select>
+              </template>
+              <template v-else>
+                <span v-for="label in item.labels" :key="label" class="item-label-badge">
+                  {{ label }}
+                </span>
+              </template>
             </td>
 
             <td class="table-cell actions-cell">
               <template v-if="editingItemId === item.id_item">
-                <button
-                  @click="saveEdit(item.id_item, item.fk_profile)"
-                  class="btn-action btn-edit-save mr-2"
-                >
+                <button @click="saveEdit(item)" class="btn-action btn-edit-save mr-2">
                   Zapisz
                 </button>
                 <button @click="cancelEdit" class="btn-action btn-secondary-small">Anuluj</button>
               </template>
               <template v-else>
                 <button
-                  @click="startEdit(item.id_item, item.name)"
+                  @click="startEdit(item)"
                   class="btn-action btn-edit mr-2"
                   :disabled="!!editingItemId"
                 >
