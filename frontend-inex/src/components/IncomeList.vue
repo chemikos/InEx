@@ -1,12 +1,37 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref } from 'vue'; // Dodano 'watch'
+import { watch } from 'vue'; // Dodano 'watch'
+import { storeToRefs } from 'pinia'; // Dodano storeToRefs
 import { useIncomeStore, type Income } from '@/stores/incomeStore';
 import { useProfileStore } from '@/stores/profileStore';
 
 const incomeStore = useIncomeStore();
 const profileStore = useProfileStore();
 
-const activeProfileId = computed(() => profileStore.activeProfileId || 0);
+// --- KLUCZOWE ZMIANY ---
+// 1. Używamy storeToRefs do uzyskania reaktywności dla ID
+const { activeProfileId } = storeToRefs(profileStore);
+
+// 2. Wypakowujemy stan z IncomeStore
+const { incomes, isLoading, totalIncomes } = storeToRefs(incomeStore);
+
+// --- REAKTYWNE ŁADOWANIE DANYCH ---
+// Obserwujemy zmianę aktywnego ID profilu i wywołujemy fetchIncomes
+watch(
+  activeProfileId,
+  (newId) => {
+    // Sprawdzamy, czy mamy poprawne ID przed pobraniem
+    if (newId !== null && newId !== 0) {
+      // Zakładamy, że fetchIncomes w Store przyjmuje activeProfileId lub nie przyjmuje żadnego argumentu
+      // i pobiera dane dla tego profilu.
+      incomeStore.fetchIncomes(newId);
+    }
+  },
+  {
+    immediate: true, // Uruchamia ładowanie przy pierwszym montowaniu (gdy aktywny profil jest już wybrany)
+  },
+);
+// ---------------------------------
 
 // --- STAN EDYCJI ---
 const editingIncomeId = ref<number | null>(null);
@@ -119,14 +144,10 @@ const confirmDelete = async (incomeId: number, amount: number) => {
     </div>
     <p class="income-summary-box">
       Łączna kwota wpłat:
-      <span class="income-summary-amount"
-        >{{ parseFloat(incomeStore.totalIncomes).toFixed(2) }} zł</span
-      >
+      <span class="income-summary-amount">{{ parseFloat(totalIncomes).toFixed(2) }} zł</span>
     </p>
-    <div v-if="incomeStore.isLoading" class="text-center p-8 text-gray-500">
-      Ładowanie danych wpłat...
-    </div>
-    <div v-else-if="incomeStore.incomes.length > 0" class="overflow-x-auto">
+    <div v-if="isLoading" class="text-center p-8 text-gray-500">Ładowanie danych wpłat...</div>
+    <div v-else-if="incomes.length > 0" class="overflow-x-auto">
       <table class="data-table">
         <thead>
           <tr>
@@ -138,11 +159,7 @@ const confirmDelete = async (incomeId: number, amount: number) => {
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="income in incomeStore.incomes"
-            :key="income.id_income"
-            class="table-row income-row-hover"
-          >
+          <tr v-for="income in incomes" :key="income.id_income" class="table-row income-row-hover">
             <td class="table-cell">{{ income.id_income }}</td>
 
             <td class="table-cell income-amount-cell">

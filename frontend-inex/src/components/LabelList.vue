@@ -1,8 +1,46 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
+// import { onMounted } from 'vue';
 import { useLabelStore } from '@/stores/labelStore';
+import { storeToRefs } from 'pinia';
+import { useProfileStore } from '@/stores/profileStore';
 
 const labelStore = useLabelStore();
+const profileStore = useProfileStore();
+const { labels, isLoading } = storeToRefs(labelStore);
+const { activeProfileId } = storeToRefs(profileStore);
+
+// --- FUNKCJA POBIERANIA DANYCH ---
+const loadData = (id: number | null) => {
+  if (id !== null) {
+    // Wywołujemy funkcję fetch z aktualnym ID
+    labelStore.fetchLabels(id);
+  } else {
+    // Czyścimy listę, jeśli profil jest nieaktywny
+    labels.value = [];
+  }
+};
+
+// === GŁÓWNA REAKTYWNOŚĆ: ===
+// 1. Reagujemy na zmianę ID profilu (gdy użytkownik przełącza profil)
+watch(
+  activeProfileId,
+  (newId) => {
+    loadData(newId);
+  },
+  {
+    immediate: true, // Powoduje pierwsze ładowanie po montażu
+  },
+);
+
+// 2. Opcjonalnie: Zapewnienie, że dane są ładowane przy montowaniu.
+// Choć watch z immediate: true powinien to robić, to jest to bezpieczne zabezpieczenie.
+// Możesz to pominąć, jeśli watch wystarczy.
+/*
+onMounted(() => {
+    loadData(activeProfileId.value);
+});
+*/
 
 // --- STAN EDYCJI ---
 // ID etykiety, która jest obecnie edytowana
@@ -103,9 +141,9 @@ const confirmDelete = async (labelId: number, labelName: string, profileId: numb
       {{ message.text }}
     </div>
 
-    <div v-if="labelStore.isLoading" class="p-4 text-center">Ładowanie etykiet...</div>
+    <div v-if="isLoading" class="p-4 text-center">Ładowanie etykiet...</div>
 
-    <div v-else-if="labelStore.labels.length === 0" class="p-4 text-center bg-gray-50 rounded-md">
+    <div v-else-if="labels.length === 0" class="p-4 text-center bg-gray-50 rounded-md">
       Brak zdefiniowanych etykiet dla tego profilu.
     </div>
 
@@ -118,7 +156,7 @@ const confirmDelete = async (labelId: number, labelName: string, profileId: numb
           </tr>
         </thead>
         <tbody>
-          <tr v-for="label in labelStore.labels" :key="label.id_label" class="table-row">
+          <tr v-for="label in labels" :key="label.id_label" class="table-row">
             <td class="table-cell">
               <template v-if="editingLabelId === label.id_label">
                 <input

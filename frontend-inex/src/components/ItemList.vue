@@ -1,12 +1,50 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
+// import { onMounted } from 'vue';
 import { useItemStore, type Item } from '@/stores/itemStore';
 import { useCategoryStore } from '@/stores/categoryStore';
 import { useLabelStore } from '@/stores/labelStore';
+import { storeToRefs } from 'pinia';
+import { useProfileStore } from '@/stores/profileStore';
 
 const itemStore = useItemStore();
 const categoryStore = useCategoryStore();
 const labelStore = useLabelStore();
+const profileStore = useProfileStore();
+const { items, isLoading } = storeToRefs(itemStore);
+const { activeProfileId } = storeToRefs(profileStore);
+
+// --- FUNKCJA POBIERANIA DANYCH ---
+const loadData = (id: number | null) => {
+  if (id !== null) {
+    // Wywołujemy funkcję fetch z aktualnym ID
+    itemStore.fetchItems(id);
+  } else {
+    // Czyścimy listę, jeśli profil jest nieaktywny
+    items.value = [];
+  }
+};
+
+// === GŁÓWNA REAKTYWNOŚĆ: ===
+// 1. Reagujemy na zmianę ID profilu (gdy użytkownik przełącza profil)
+watch(
+  activeProfileId,
+  (newId) => {
+    loadData(newId);
+  },
+  {
+    immediate: true, // Powoduje pierwsze ładowanie po montażu
+  },
+);
+
+// 2. Opcjonalnie: Zapewnienie, że dane są ładowane przy montowaniu.
+// Choć watch z immediate: true powinien to robić, to jest to bezpieczne zabezpieczenie.
+// Możesz to pominąć, jeśli watch wystarczy.
+/*
+onMounted(() => {
+    loadData(activeProfileId.value);
+});
+*/
 
 // W CELU UŻYCIA KATEGORII/ETYKIET W FORMULARZU EDYCJI MUSIMY JE WCZEŚNIEJ POBRAĆ:
 // Załóżmy, że profileId jest dostępne z jakiegoś globalnego źródła (np. useAuthStore)
@@ -147,11 +185,9 @@ const confirmDelete = async (itemId: number, itemName: string, profileId: number
       <span class="item-summary-amount">{{ itemStore.itemCount }}</span>
     </p>
 
-    <div v-if="itemStore.isLoading" class="text-center p-8 text-gray-500">
-      Ładowanie pozycji wydatków...
-    </div>
+    <div v-if="isLoading" class="text-center p-8 text-gray-500">Ładowanie pozycji wydatków...</div>
 
-    <div v-else-if="itemStore.items.length > 0" class="overflow-x-auto">
+    <div v-else-if="items.length > 0" class="overflow-x-auto">
       <table class="data-table">
         <thead>
           <tr>
@@ -163,7 +199,7 @@ const confirmDelete = async (itemId: number, itemName: string, profileId: number
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in itemStore.items" :key="item.id_item" class="table-row item-row-hover">
+          <tr v-for="item in items" :key="item.id_item" class="table-row item-row-hover">
             <td class="table-cell">{{ item.id_item }}</td>
 
             <td class="table-cell font-medium">

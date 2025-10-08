@@ -1,8 +1,46 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
+// import { onMounted } from 'vue';
 import { useCategoryStore } from '@/stores/categoryStore';
+import { storeToRefs } from 'pinia';
+import { useProfileStore } from '@/stores/profileStore';
 
 const categoryStore = useCategoryStore();
+const profileStore = useProfileStore();
+const { categories, isLoading } = storeToRefs(categoryStore);
+const { activeProfileId } = storeToRefs(profileStore);
+
+// --- FUNKCJA POBIERANIA DANYCH ---
+const loadData = (id: number | null) => {
+  if (id !== null) {
+    // Wywołujemy funkcję fetch z aktualnym ID
+    categoryStore.fetchCategories(id);
+  } else {
+    // Czyścimy listę, jeśli profil jest nieaktywny
+    categories.value = [];
+  }
+};
+
+// === GŁÓWNA REAKTYWNOŚĆ: ===
+// 1. Reagujemy na zmianę ID profilu (gdy użytkownik przełącza profil)
+watch(
+  activeProfileId,
+  (newId) => {
+    loadData(newId);
+  },
+  {
+    immediate: true, // Powoduje pierwsze ładowanie po montażu
+  },
+);
+
+// 2. Opcjonalnie: Zapewnienie, że dane są ładowane przy montowaniu.
+// Choć watch z immediate: true powinien to robić, to jest to bezpieczne zabezpieczenie.
+// Możesz to pominąć, jeśli watch wystarczy.
+/*
+onMounted(() => {
+    loadData(activeProfileId.value);
+});
+*/
 
 // --- STAN EDYCJI ---
 // ID kategorii, która jest obecnie edytowana
@@ -103,12 +141,9 @@ const confirmDelete = async (categoryId: number, categoryName: string, profileId
       {{ message.text }}
     </div>
 
-    <div v-if="categoryStore.isLoading" class="p-4 text-center">Ładowanie kategorii...</div>
+    <div v-if="isLoading" class="p-4 text-center">Ładowanie kategorii...</div>
 
-    <div
-      v-else-if="categoryStore.categories.length === 0"
-      class="p-4 text-center bg-gray-50 rounded-md"
-    >
+    <div v-else-if="categories.length === 0" class="p-4 text-center bg-gray-50 rounded-md">
       Brak zdefiniowanych kategorii dla tego profilu.
     </div>
 
@@ -121,11 +156,7 @@ const confirmDelete = async (categoryId: number, categoryName: string, profileId
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="category in categoryStore.categories"
-            :key="category.id_category"
-            class="table-row"
-          >
+          <tr v-for="category in categories" :key="category.id_category" class="table-row">
             <td class="table-cell">
               <template v-if="editingCategoryId === category.id_category">
                 <input
