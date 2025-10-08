@@ -161,7 +161,7 @@ router.get('/', async (req, res) => {
     }
     sql += ` 
       ORDER BY
-        s.name, i.date`;
+        i.date DESC, s.name`;
     const resultIncomes = await db.allPromise(sql, params);
     return res.status(200).json(resultIncomes);
   } catch (err) {

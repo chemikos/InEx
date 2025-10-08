@@ -1,9 +1,10 @@
 // src/stores/itemStore.ts
 
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import http from '@/api/http';
 import { isAxiosError } from 'axios';
+import { useProfileStore } from './profileStore';
 
 // Definicja typu dla Pozycji Wydatku (Item)
 export interface Item {
@@ -42,6 +43,7 @@ function getErrorMessage(error: unknown): string {
 }
 
 export const useItemStore = defineStore('item', () => {
+  const profileStore = useProfileStore();
   // --- STATE ---
   const items = ref<Item[]>([]);
   const isLoading = ref(false); // --- GETTERS (Computed) ---
@@ -49,6 +51,11 @@ export const useItemStore = defineStore('item', () => {
   const itemCount = computed(() => items.value.length); // --- ACTIONS ---
 
   async function fetchItems(profileId: number) {
+    if (!profileId) {
+      // Jeśli nie ma ID, resetujemy dane i przerywamy.
+      items.value = [];
+      return;
+    }
     isLoading.value = true;
     try {
       const response = await http.get(`/items?profileId=${profileId}`);
@@ -61,28 +68,64 @@ export const useItemStore = defineStore('item', () => {
     }
   }
 
+  // === KLUCZOWA LOGIKA REAKTYWNOŚCI ===
+  // Obserwowanie zmiany aktywnego profilu i wywoływanie fetchCategories
+  watch(
+    () => profileStore.activeProfileId,
+    (newId) => {
+      // Wywołaj funkcję fetchCategories dla nowego ID (może być null)
+      if (newId !== null) {
+        fetchItems(newId);
+      } else {
+        items.value = []; // Wyczyść, jeśli nie ma aktywnego profilu
+      }
+    },
+    { immediate: true }, // Uruchom watchera od razu, gdy Store jest inicjowany
+  );
+  // ===================================
+
   async function addItem(itemData: NewItemData) {
     if (!itemData.itemName || !itemData.categoryId) {
       throw new Error('Nazwa pozycji i kategoria są wymagane.');
     }
 
     try {
+      // const response = await http.post('/items', itemData);
+      // const data = response.data; // Backend prawdopodobnie zwróciłby pełny obiekt z nazwami,
+      // // ale na potrzeby szybkiego dodania do stanu użyjemy Twojego mocka
+
+      // const newItem: Item = {
+      //   id_item: data.itemId,
+      //   name: itemData.itemName,
+      //   fk_profile: itemData.profileId,
+      //   fk_category: itemData.categoryId,
+      //   category_name: 'Nieznana (przeładuj)', // Placeholder
+      //   labels: [], // Placeholder
+      //   label_ids: itemData.labelIds,
+      // };
+
+      // items.value.push(newItem);
+      // return { item: newItem, message: data.message };
+
       const response = await http.post('/items', itemData);
-      const data = response.data; // Backend prawdopodobnie zwróciłby pełny obiekt z nazwami,
-      // ale na potrzeby szybkiego dodania do stanu użyjemy Twojego mocka
+      const data = response.data;
+      // Jeżeli dodanie się powiodło i jest aktywny profil
+      if (profileStore.activeProfileId === itemData.profileId) {
+        const newItem: Item = {
+          id_item: data.itemId, // Zakładamy, że backend zwraca ID
+          name: itemData.itemName,
+          fk_profile: itemData.profileId,
+          fk_category: itemData.categoryId,
+          category_name: 'Nieznana (przeładuj)', // Placeholder
+          labels: [], // Placeholder
+          label_ids: itemData.labelIds,
+        };
+        // Dodajemy nową kategorię do lokalnego stanu
+        items.value.push(newItem);
+        return { item: newItem, message: data.message };
+      }
 
-      const newItem: Item = {
-        id_item: data.itemId,
-        name: itemData.itemName,
-        fk_profile: itemData.profileId,
-        fk_category: itemData.categoryId,
-        category_name: 'Nieznana (przeładuj)', // Placeholder
-        labels: [], // Placeholder
-        label_ids: itemData.labelIds,
-      };
-
-      items.value.push(newItem);
-      return { item: newItem, message: data.message };
+      return { item: null, message: data.message };
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
@@ -105,15 +148,17 @@ export const useItemStore = defineStore('item', () => {
       });
 
       // Aktualizacja stanu lokalnego
-      const itemToUpdate = items.value.find((i) => i.id_item === updateData.id_item);
-      if (itemToUpdate) {
-        // Aktualizujemy tylko zmienioną nazwę
-        itemToUpdate.name = updateData.newName;
+      if (profileStore.activeProfileId === updateData.fk_profile) {
+        const itemToUpdate = items.value.find((i) => i.id_item === updateData.id_item);
+        if (itemToUpdate) {
+          // Aktualizujemy tylko zmienioną nazwę
+          itemToUpdate.name = updateData.newName;
 
-        // **UWAGA:** Jeśli edycja pozycji miałaby zmieniać kategorię/etykiety,
-        // musielibyśmy tu aktualizować również category_name, labels, fk_category i label_ids
-        // na podstawie danych zwróconych przez backend (lub użyć tu danych z updateData).
-        // Na potrzeby edycji inline nazwy, ta zmiana jest wystarczająca.
+          // **UWAGA:** Jeśli edycja pozycji miałaby zmieniać kategorię/etykiety,
+          // musielibyśmy tu aktualizować również category_name, labels, fk_category i label_ids
+          // na podstawie danych zwróconych przez backend (lub użyć tu danych z updateData).
+          // Na potrzeby edycji inline nazwy, ta zmiana jest wystarczająca.
+        }
       }
 
       return {

@@ -55,7 +55,11 @@ const handleSubmit = async () => {
     const response = await itemStore.addItem(newItemData);
 
     message.value = {
-      text: response.message || `Dodano pozycję ID: ${response.item.id_item}`,
+      text:
+        response.message ||
+        (response.item
+          ? `Dodano pozycję wydatków ID: ${response.item.id_item}`
+          : 'Dodano pozycję wydatków.'),
       type: 'success',
     };
 

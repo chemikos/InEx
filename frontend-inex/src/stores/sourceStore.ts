@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import http from '@/api/http';
 import { isAxiosError } from 'axios';
+import { useProfileStore } from './profileStore';
 
 // Definicja typu dla Źródła Dochodów
 export interface Source {
@@ -31,6 +32,7 @@ function getErrorMessage(error: unknown): string {
 }
 
 export const useSourceStore = defineStore('source', () => {
+  const profileStore = useProfileStore();
   // --- STATE ---
   const sources = ref<Source[]>([]);
   const isLoading = ref(false);
@@ -44,6 +46,11 @@ export const useSourceStore = defineStore('source', () => {
    * Pobiera listę źródeł dochodu dla danego profilu (GET).
    */
   async function fetchSources(profileId: number) {
+    if (!profileId) {
+      // Jeśli nie ma ID, resetujemy dane i przerywamy.
+      sources.value = [];
+      return;
+    }
     isLoading.value = true;
     try {
       // Wywołanie endpointu GET /sources?profileId=...
@@ -57,6 +64,22 @@ export const useSourceStore = defineStore('source', () => {
     }
   }
 
+  // === KLUCZOWA LOGIKA REAKTYWNOŚCI ===
+  // Obserwowanie zmiany aktywnego profilu i wywoływanie fetchCategories
+  watch(
+    () => profileStore.activeProfileId,
+    (newId) => {
+      // Wywołaj funkcję fetchCategories dla nowego ID (może być null)
+      if (newId !== null) {
+        fetchSources(newId);
+      } else {
+        sources.value = []; // Wyczyść, jeśli nie ma aktywnego profilu
+      }
+    },
+    { immediate: true }, // Uruchom watchera od razu, gdy Store jest inicjowany
+  );
+  // ===================================
+
   /**
    * Dodaje nowe źródło dochodu (POST).
    */
@@ -64,19 +87,35 @@ export const useSourceStore = defineStore('source', () => {
     if (!sourceData.sourceName) throw new Error('Nazwa źródła jest wymagana.');
 
     try {
+      // const response = await http.post('/sources', sourceData);
+      // const data = response.data;
+
+      // const newSource: Source = {
+      //   id_source: data.sourceId,
+      //   name: sourceData.sourceName,
+      //   fk_profile: sourceData.profileId,
+      // };
+
+      // // Dodajemy nowe źródło do lokalnego stanu
+      // sources.value.push(newSource);
+
+      // return { source: newSource, message: data.message };
+
       const response = await http.post('/sources', sourceData);
       const data = response.data;
+      // Jeżeli dodanie się powiodło i jest aktywny profil
+      if (profileStore.activeProfileId === sourceData.profileId) {
+        const newSource: Source = {
+          id_source: data.sourceId, // Zakładamy, że backend zwraca ID
+          name: sourceData.sourceName,
+          fk_profile: sourceData.profileId,
+        };
+        // Dodajemy nową kategorię do lokalnego stanu
+        sources.value.push(newSource);
+        return { source: newSource, message: data.message };
+      }
 
-      const newSource: Source = {
-        id_source: data.sourceId,
-        name: sourceData.sourceName,
-        fk_profile: sourceData.profileId,
-      };
-
-      // Dodajemy nowe źródło do lokalnego stanu
-      sources.value.push(newSource);
-
-      return { source: newSource, message: data.message };
+      return { category: null, message: data.message };
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
@@ -94,11 +133,12 @@ export const useSourceStore = defineStore('source', () => {
       await http.put(url, { sourceName: updateData.newName, profileId: updateData.fk_profile });
 
       // Aktualizacja stanu lokalnego
-      const sourceToUpdate = sources.value.find((s) => s.id_source === updateData.id_source);
-      if (sourceToUpdate) {
-        sourceToUpdate.name = updateData.newName;
+      if (profileStore.activeProfileId === updateData.fk_profile) {
+        const sourceToUpdate = sources.value.find((s) => s.id_source === updateData.id_source);
+        if (sourceToUpdate) {
+          sourceToUpdate.name = updateData.newName;
+        }
       }
-
       return {
         success: true,
         message: `Źródło z ID ${updateData.id_source} zostało zaktualizowane na: ${updateData.newName}.`,

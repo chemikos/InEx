@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import http from '@/api/http';
 import { isAxiosError } from 'axios';
+import { useProfileStore } from './profileStore';
 
 // Definicja typu dla Kategorii
 export interface Category {
@@ -32,6 +33,7 @@ function getErrorMessage(error: unknown): string {
 }
 
 export const useCategoryStore = defineStore('category', () => {
+  const profileStore = useProfileStore();
   // --- STATE ---
   const categories = ref<Category[]>([]);
   const isLoading = ref(false);
@@ -45,6 +47,11 @@ export const useCategoryStore = defineStore('category', () => {
    * Pobiera listę kategorii dla danego profilu (GET).
    */
   async function fetchCategories(profileId: number) {
+    if (!profileId) {
+      // Jeśli nie ma ID, resetujemy dane i przerywamy.
+      categories.value = [];
+      return;
+    }
     isLoading.value = true;
     try {
       const response = await http.get<Category[]>(`/categories?profileId=${profileId}`);
@@ -57,6 +64,22 @@ export const useCategoryStore = defineStore('category', () => {
     }
   }
 
+  // === KLUCZOWA LOGIKA REAKTYWNOŚCI ===
+  // Obserwowanie zmiany aktywnego profilu i wywoływanie fetchCategories
+  watch(
+    () => profileStore.activeProfileId,
+    (newId) => {
+      // Wywołaj funkcję fetchCategories dla nowego ID (może być null)
+      if (newId !== null) {
+        fetchCategories(newId);
+      } else {
+        categories.value = []; // Wyczyść, jeśli nie ma aktywnego profilu
+      }
+    },
+    { immediate: true }, // Uruchom watchera od razu, gdy Store jest inicjowany
+  );
+  // ===================================
+
   /**
    * Dodaje nową kategorię (POST).
    */
@@ -66,38 +89,39 @@ export const useCategoryStore = defineStore('category', () => {
     try {
       const response = await http.post('/categories', categoryData);
       const data = response.data;
+      // Jeżeli dodanie się powiodło i jest aktywny profil
+      if (profileStore.activeProfileId === categoryData.profileId) {
+        const newCategory: Category = {
+          id_category: data.categoryId, // Zakładamy, że backend zwraca ID
+          name: categoryData.categoryName,
+          fk_profile: categoryData.profileId,
+        };
+        // Dodajemy nową kategorię do lokalnego stanu
+        categories.value.push(newCategory);
+        return { category: newCategory, message: data.message };
+      }
 
-      const newCategory: Category = {
-        id_category: data.categoryId,
-        name: categoryData.categoryName,
-        fk_profile: categoryData.profileId,
-      };
-
-      // Dodajemy nową kategorię do lokalnego stanu
-      categories.value.push(newCategory);
-
-      return { category: newCategory, message: data.message };
+      return { category: null, message: data.message };
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
-  }
-
-  /**
+  } /**
    * Aktualizuje istniejącą kategorię (PUT).
    */
+
   async function updateCategory(updateData: UpdateCategoryData) {
     try {
-      const url = `/categories/${updateData.id_category}`;
+      const url = `/categories/${updateData.id_category}`; // Wysyłamy zapytanie PUT z nową nazwą
 
-      // Wysyłamy zapytanie PUT z nową nazwą (zakładamy, że backend oczekuje klucza 'name')
-      await http.put(url, { categoryName: updateData.newName, profileId: updateData.fk_profile });
+      await http.put(url, { categoryName: updateData.newName, profileId: updateData.fk_profile }); // Aktualizacja stanu lokalnego (tylko jeśli profil się zgadza)
 
-      // Aktualizacja stanu lokalnego
-      const categoryToUpdate = categories.value.find(
-        (c) => c.id_category === updateData.id_category,
-      );
-      if (categoryToUpdate) {
-        categoryToUpdate.name = updateData.newName;
+      if (profileStore.activeProfileId === updateData.fk_profile) {
+        const categoryToUpdate = categories.value.find(
+          (c) => c.id_category === updateData.id_category,
+        );
+        if (categoryToUpdate) {
+          categoryToUpdate.name = updateData.newName;
+        }
       }
 
       return {

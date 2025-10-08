@@ -194,7 +194,8 @@ router.get('/', async (req, res) => {
       params.push(...itemIds);
     }
     sql += ` GROUP BY e.id_expense
-      ORDER BY e.date, c.name, i.name`;
+      ORDER BY e.date DESC, c.name, i.name
+      LIMIT 50;`;
     const resultExpenses = await db.allPromise(sql, params);
 
     const processedExpenses = resultExpenses.map((expense) => {

@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import http from '@/api/http';
 import { isAxiosError } from 'axios';
+import { useProfileStore } from './profileStore';
 
 // Definicja typu dla Etykiety
 export interface Label {
@@ -32,6 +33,7 @@ function getErrorMessage(error: unknown): string {
 }
 
 export const useLabelStore = defineStore('label', () => {
+  const profileStore = useProfileStore();
   // --- STATE ---
   const labels = ref<Label[]>([]);
   const isLoading = ref(false);
@@ -45,6 +47,11 @@ export const useLabelStore = defineStore('label', () => {
    * Pobiera listę etykiet dla danego profilu (GET).
    */
   async function fetchLabels(profileId: number) {
+    if (!profileId) {
+      // Jeśli nie ma ID, resetujemy dane i przerywamy.
+      labels.value = [];
+      return;
+    }
     isLoading.value = true;
     try {
       const response = await http.get<Label[]>(`/labels?profileId=${profileId}`);
@@ -57,6 +64,22 @@ export const useLabelStore = defineStore('label', () => {
     }
   }
 
+  // === KLUCZOWA LOGIKA REAKTYWNOŚCI ===
+  // Obserwowanie zmiany aktywnego profilu i wywoływanie fetchCategories
+  watch(
+    () => profileStore.activeProfileId,
+    (newId) => {
+      // Wywołaj funkcję fetchLabels dla nowego ID (może być null)
+      if (newId !== null) {
+        fetchLabels(newId);
+      } else {
+        labels.value = []; // Wyczyść, jeśli nie ma aktywnego profilu
+      }
+    },
+    { immediate: true }, // Uruchom watchera od razu, gdy Store jest inicjowany
+  );
+  // ===================================
+
   /**
    * Dodaje nową etykietę (POST).
    */
@@ -64,19 +87,32 @@ export const useLabelStore = defineStore('label', () => {
     if (!labelData.labelName) throw new Error('Nazwa etykiety jest wymagana.');
 
     try {
+      // const newLabel: Label = {
+      //   id_label: data.labelId,
+      //   name: labelData.labelName,
+      //   fk_profile: labelData.profileId,
+      // };
+
+      // // Dodajemy nową etykietę do lokalnego stanu
+      // labels.value.push(newLabel);
+
+      // return { label: newLabel, message: data.message };
+
       const response = await http.post('/labels', labelData);
       const data = response.data;
+      // Jeżeli dodanie się powiodło i jest aktywny profil
+      if (profileStore.activeProfileId === labelData.profileId) {
+        const newLabel: Label = {
+          id_label: data.labelId, // Zakładamy, że backend zwraca ID
+          name: labelData.labelName,
+          fk_profile: labelData.profileId,
+        };
+        // Dodajemy nową kategorię do lokalnego stanu
+        labels.value.push(newLabel);
+        return { label: newLabel, message: data.message };
+      }
 
-      const newLabel: Label = {
-        id_label: data.labelId,
-        name: labelData.labelName,
-        fk_profile: labelData.profileId,
-      };
-
-      // Dodajemy nową etykietę do lokalnego stanu
-      labels.value.push(newLabel);
-
-      return { label: newLabel, message: data.message };
+      return { label: null, message: data.message };
     } catch (error) {
       // Poprawiamy obsługę błędu na użycie nowej funkcji
       throw new Error(getErrorMessage(error));
@@ -97,11 +133,12 @@ export const useLabelStore = defineStore('label', () => {
       });
 
       // Aktualizacja stanu lokalnego
-      const labelToUpdate = labels.value.find((l) => l.id_label === updateData.id_label);
-      if (labelToUpdate) {
-        labelToUpdate.name = updateData.newName;
+      if (profileStore.activeProfileId === updateData.fk_profile) {
+        const labelToUpdate = labels.value.find((l) => l.id_label === updateData.id_label);
+        if (labelToUpdate) {
+          labelToUpdate.name = updateData.newName;
+        }
       }
-
       return {
         success: true,
         message: `Etykieta z ID ${updateData.id_label} została zaktualizowana na: ${updateData.newName}.`,

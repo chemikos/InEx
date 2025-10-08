@@ -31,7 +31,11 @@ const handleSubmit = async () => {
     const response = await categoryStore.addCategory(newCategoryData);
 
     message.value = {
-      text: response.message || `Dodano kategorię ID: ${response.category.id_category}`,
+      text:
+        response.message ||
+        (response.category
+          ? `Dodano kategorię ID: ${response.category.id_category}`
+          : 'Dodano kategorię.'),
       type: 'success',
     };
 

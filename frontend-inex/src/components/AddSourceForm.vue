@@ -31,7 +31,11 @@ const handleSubmit = async () => {
     const response = await sourceStore.addSource(newSourceData);
 
     message.value = {
-      text: response.message || `Dodano źródło ID: ${response.source.id_source}`,
+      text:
+        response.message ||
+        (response.source
+          ? `Dodano źródło dochodu ID: ${response.source.id_source}`
+          : 'Dodano źródło dochodu.'),
       type: 'success',
     };
 

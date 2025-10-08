@@ -31,7 +31,9 @@ const handleSubmit = async () => {
     const response = await labelStore.addLabel(newLabelData);
 
     message.value = {
-      text: response.message || `Dodano etykietę ID: ${response.label.id_label}`,
+      text:
+        response.message ||
+        (response.label ? `Dodano etykietę ID: ${response.label.id_label}` : 'Dodano etykietę.'),
       type: 'success',
     };
 
