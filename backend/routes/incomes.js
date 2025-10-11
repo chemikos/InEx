@@ -149,7 +149,8 @@ router.get('/', async (req, res) => {
             i.amount,
             i.date,
             s.name AS source_name,
-            s.id_source
+            s.id_source,
+            i.fk_profile
         FROM incomes i
         JOIN sources s ON i.fk_source = s.id_source
         WHERE 

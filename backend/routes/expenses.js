@@ -165,6 +165,7 @@ router.get('/', async (req, res) => {
         i.name AS item_name,
         i.id_item AS fk_item,
         c.id_category AS fk_category,
+        e.fk_profile,
        GROUP_CONCAT(l.name) AS labels,
        GROUP_CONCAT(l.id_label) AS label_ids
       FROM expenses e
