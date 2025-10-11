@@ -1,5 +1,5 @@
-import { defineStore } from 'pinia';
-import { ref, computed, watch } from 'vue';
+import { defineStore, storeToRefs } from 'pinia';
+import { ref, computed } from 'vue';
 import http from '@/api/http';
 import { isAxiosError } from 'axios';
 import { useProfileStore } from './profileStore';
@@ -32,22 +32,27 @@ function getErrorMessage(error: unknown): string {
 }
 
 export const useSourceStore = defineStore('source', () => {
-  const profileStore = useProfileStore();
-  // --- STATE ---
+  const profileStore = useProfileStore(); // ZMIANA 1: Importujemy verifiedActiveProfileId, który jest strażnikiem
+  const { verifiedActiveProfileId } = storeToRefs(profileStore); // --- STATE ---
+
   const sources = ref<Source[]>([]);
-  const isLoading = ref(false);
+  const isLoading = ref(false); // --- GETTERS (Computed) ---
 
-  // --- GETTERS (Computed) ---
-  const sourceCount = computed(() => sources.value.length);
-
-  // --- ACTIONS ---
-
+  const sourceCount = computed(() => sources.value.length); // ZMIANA 2: Getter dla listy rozwijanej/wyświetlania, który jest świadomy profilu
+  const activeSources = computed(() => {
+    // Zwracamy listę tylko, jeśli ID profilu jest zweryfikowane
+    if (verifiedActiveProfileId.value === null) {
+      return [];
+    }
+    return sources.value;
+  }); // --- ACTIONS ---
   /**
    * Pobiera listę źródeł dochodu dla danego profilu (GET).
    */
+
   async function fetchSources(profileId: number) {
+    // ZMIANA 3: Wymuszamy sprawdzenie ID. Jeśli jest null/0, resetujemy dane i przerywamy.
     if (!profileId) {
-      // Jeśli nie ma ID, resetujemy dane i przerywamy.
       sources.value = [];
       return;
     }
@@ -62,82 +67,49 @@ export const useSourceStore = defineStore('source', () => {
     } finally {
       isLoading.value = false;
     }
-  }
-
-  // === KLUCZOWA LOGIKA REAKTYWNOŚCI ===
-  // Obserwowanie zmiany aktywnego profilu i wywoływanie fetchCategories
-  watch(
-    () => profileStore.activeProfileId,
-    (newId) => {
-      // Wywołaj funkcję fetchCategories dla nowego ID (może być null)
-      if (newId !== null) {
-        fetchSources(newId);
-      } else {
-        sources.value = []; // Wyczyść, jeśli nie ma aktywnego profilu
-      }
-    },
-    { immediate: true }, // Uruchom watchera od razu, gdy Store jest inicjowany
-  );
-  // ===================================
-
-  /**
+  } /**
    * Dodaje nowe źródło dochodu (POST).
    */
+
   async function addSource(sourceData: NewSourceData) {
-    if (!sourceData.sourceName) throw new Error('Nazwa źródła jest wymagana.');
+    if (!sourceData.sourceName) throw new Error('Nazwa źródła jest wymagana.'); // ZMIANA 4: Dodatkowe sprawdzenie, czy operacja dotyczy aktualnie aktywnego, zweryfikowanego profilu
+    const currentActiveId = verifiedActiveProfileId.value;
+    if (!currentActiveId || sourceData.profileId !== currentActiveId) {
+      throw new Error('Nie można dodać źródła: Brak aktywnego profilu lub niezgodność ID profilu.');
+    }
 
     try {
-      // const response = await http.post('/sources', sourceData);
-      // const data = response.data;
-
-      // const newSource: Source = {
-      //   id_source: data.sourceId,
-      //   name: sourceData.sourceName,
-      //   fk_profile: sourceData.profileId,
-      // };
-
-      // // Dodajemy nowe źródło do lokalnego stanu
-      // sources.value.push(newSource);
-
-      // return { source: newSource, message: data.message };
-
       const response = await http.post('/sources', sourceData);
-      const data = response.data;
-      // Jeżeli dodanie się powiodło i jest aktywny profil
-      if (profileStore.activeProfileId === sourceData.profileId) {
-        const newSource: Source = {
-          id_source: data.sourceId, // Zakładamy, że backend zwraca ID
-          name: sourceData.sourceName,
-          fk_profile: sourceData.profileId,
-        };
-        // Dodajemy nową kategorię do lokalnego stanu
-        sources.value.push(newSource);
-        return { source: newSource, message: data.message };
-      }
-
-      return { category: null, message: data.message };
+      const data = response.data; // Dodajemy do stanu tylko jeśli ID profilu jest zgodne (co już jest zagwarantowane przez currentActiveId)
+      const newSource: Source = {
+        id_source: data.sourceId, // Zakładamy, że backend zwraca ID
+        name: sourceData.sourceName,
+        fk_profile: sourceData.profileId,
+      };
+      sources.value.push(newSource);
+      return { source: newSource, message: data.message };
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
-  }
-
-  /**
+  } /**
    * Aktualizuje istniejące źródło dochodu (PUT).
    */
+
   async function updateSource(updateData: UpdateSourceData) {
+    // ZMIANA 5: Dodatkowe sprawdzenie, czy operacja dotyczy aktualnie aktywnego, zweryfikowanego profilu
+    const currentActiveId = verifiedActiveProfileId.value;
+    if (!currentActiveId || updateData.fk_profile !== currentActiveId) {
+      throw new Error('Nie można zaktualizować źródła: Niezgodność ID aktywnego profilu.');
+    }
+
     try {
-      const url = `/sources/${updateData.id_source}`;
+      const url = `/sources/${updateData.id_source}`; // Wysyłamy zapytanie PUT z nową nazwą
 
-      // Wysyłamy zapytanie PUT z nową nazwą
-      // Uwaga: Zakładamy, że backend oczekuje klucza 'name' dla spójności
-      await http.put(url, { sourceName: updateData.newName, profileId: updateData.fk_profile });
+      await http.put(url, { sourceName: updateData.newName, profileId: updateData.fk_profile }); // Aktualizacja stanu lokalnego
 
-      // Aktualizacja stanu lokalnego
-      if (profileStore.activeProfileId === updateData.fk_profile) {
-        const sourceToUpdate = sources.value.find((s) => s.id_source === updateData.id_source);
-        if (sourceToUpdate) {
-          sourceToUpdate.name = updateData.newName;
-        }
+      const sourceToUpdate = sources.value.find((s) => s.id_source === updateData.id_source);
+      if (sourceToUpdate) {
+        sourceToUpdate.name = updateData.newName;
       }
       return {
         success: true,
@@ -146,30 +118,33 @@ export const useSourceStore = defineStore('source', () => {
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
-  }
-
-  /**
+  } /**
    * Usuwa źródło dochodu (DELETE).
    */
+
   async function deleteSource(sourceId: number, profileId: number) {
+    // ZMIANA 6: Dodatkowe sprawdzenie, czy operacja dotyczy aktualnie aktywnego, zweryfikowanego profilu
+    const currentActiveId = verifiedActiveProfileId.value;
+    if (!currentActiveId || profileId !== currentActiveId) {
+      throw new Error('Nie można usunąć źródła: Niezgodność ID aktywnego profilu.');
+    }
+
     try {
-      const url = `/sources/${sourceId}?profileId=${profileId}`;
+      const url = `/sources/${sourceId}?profileId=${profileId}`; // Wysyłamy zapytanie DELETE
 
-      // Wysyłamy zapytanie DELETE
-      await http.delete(url);
+      await http.delete(url); // Usunięcie ze stanu lokalnego
 
-      // Usunięcie ze stanu lokalnego
       sources.value = sources.value.filter((s) => s.id_source !== sourceId);
 
       return { success: true, message: `Źródło z ID ${sourceId} zostało usunięte.` };
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
-  }
+  } // Zwrócenie stanu i akcji
 
-  // Zwrócenie stanu i akcji
   return {
     sources,
+    activeSources, // ZWRACAMY NOWY GETTER dla komponentów
     isLoading,
     sourceCount,
     fetchSources,

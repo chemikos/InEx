@@ -1,5 +1,5 @@
-import { defineStore } from 'pinia';
-import { ref, computed, watch } from 'vue';
+import { defineStore, storeToRefs } from 'pinia'; // Importujemy storeToRefs
+import { ref, computed } from 'vue';
 import http from '@/api/http';
 import { isAxiosError } from 'axios';
 import { useProfileStore } from './profileStore';
@@ -33,22 +33,26 @@ function getErrorMessage(error: unknown): string {
 }
 
 export const useLabelStore = defineStore('label', () => {
-  const profileStore = useProfileStore();
-  // --- STATE ---
+  const profileStore = useProfileStore(); // ZMIANA 1: Używamy storeToRefs do uzyskania reaktywnego, zweryfikowanego ID
+  const { verifiedActiveProfileId } = storeToRefs(profileStore); // --- STATE ---
+
   const labels = ref<Label[]>([]);
-  const isLoading = ref(false);
+  const isLoading = ref(false); // --- GETTERS (Computed) ---
 
-  // --- GETTERS (Computed) ---
-  const labelCount = computed(() => labels.value.length);
-
-  // --- ACTIONS ---
-
+  const labelCount = computed(() => labels.value.length); // ZMIANA 2: Nowy getter, który zwraca listę etykiet tylko, jeśli profil jest zweryfikowany
+  const activeLabels = computed(() => {
+    if (verifiedActiveProfileId.value === null) {
+      return [];
+    }
+    return labels.value;
+  }); // --- ACTIONS ---
   /**
    * Pobiera listę etykiet dla danego profilu (GET).
    */
+
   async function fetchLabels(profileId: number) {
+    // ZMIANA 3: Wymuszamy sprawdzenie ID. Jeśli jest null/0, resetujemy dane i przerywamy.
     if (!profileId) {
-      // Jeśli nie ma ID, resetujemy dane i przerywamy.
       labels.value = [];
       return;
     }
@@ -62,82 +66,55 @@ export const useLabelStore = defineStore('label', () => {
     } finally {
       isLoading.value = false;
     }
-  }
-
-  // === KLUCZOWA LOGIKA REAKTYWNOŚCI ===
-  // Obserwowanie zmiany aktywnego profilu i wywoływanie fetchCategories
-  watch(
-    () => profileStore.activeProfileId,
-    (newId) => {
-      // Wywołaj funkcję fetchLabels dla nowego ID (może być null)
-      if (newId !== null) {
-        fetchLabels(newId);
-      } else {
-        labels.value = []; // Wyczyść, jeśli nie ma aktywnego profilu
-      }
-    },
-    { immediate: true }, // Uruchom watchera od razu, gdy Store jest inicjowany
-  );
-  // ===================================
-
-  /**
+  } /**
    * Dodaje nową etykietę (POST).
    */
+
   async function addLabel(labelData: NewLabelData) {
-    if (!labelData.labelName) throw new Error('Nazwa etykiety jest wymagana.');
+    if (!labelData.labelName) throw new Error('Nazwa etykiety jest wymagana.'); // ZMIANA 4: Dodatkowe sprawdzenie, czy operacja dotyczy aktualnie aktywnego, zweryfikowanego profilu
+    const currentActiveId = verifiedActiveProfileId.value;
+    if (!currentActiveId || labelData.profileId !== currentActiveId) {
+      throw new Error(
+        'Nie można dodać etykiety: Brak aktywnego profilu lub niezgodność ID profilu.',
+      );
+    }
 
     try {
-      // const newLabel: Label = {
-      //   id_label: data.labelId,
-      //   name: labelData.labelName,
-      //   fk_profile: labelData.profileId,
-      // };
-
-      // // Dodajemy nową etykietę do lokalnego stanu
-      // labels.value.push(newLabel);
-
-      // return { label: newLabel, message: data.message };
-
       const response = await http.post('/labels', labelData);
-      const data = response.data;
-      // Jeżeli dodanie się powiodło i jest aktywny profil
-      if (profileStore.activeProfileId === labelData.profileId) {
-        const newLabel: Label = {
-          id_label: data.labelId, // Zakładamy, że backend zwraca ID
-          name: labelData.labelName,
-          fk_profile: labelData.profileId,
-        };
-        // Dodajemy nową kategorię do lokalnego stanu
-        labels.value.push(newLabel);
-        return { label: newLabel, message: data.message };
-      }
-
-      return { label: null, message: data.message };
+      const data = response.data; // Dodajemy nową etykietę do lokalnego stanu
+      const newLabel: Label = {
+        id_label: data.labelId, // Zakładamy, że backend zwraca ID
+        name: labelData.labelName,
+        fk_profile: labelData.profileId,
+      };
+      labels.value.push(newLabel);
+      return { label: newLabel, message: data.message };
     } catch (error) {
       // Poprawiamy obsługę błędu na użycie nowej funkcji
       throw new Error(getErrorMessage(error));
     }
-  }
-
-  /**
+  } /**
    * Aktualizuje istniejącą etykietę (PUT).
    */
-  async function updateLabel(updateData: UpdateLabelData) {
-    try {
-      const url = `/labels/${updateData.id_label}`;
 
-      // WYSYŁANIE ZGODNE Z TWOJĄ KONWENCJĄ: labelName i profileId w body
+  async function updateLabel(updateData: UpdateLabelData) {
+    // ZMIANA 5: Dodatkowe sprawdzenie, czy operacja dotyczy aktualnie aktywnego, zweryfikowanego profilu
+    const currentActiveId = verifiedActiveProfileId.value;
+    if (!currentActiveId || updateData.fk_profile !== currentActiveId) {
+      throw new Error('Nie można zaktualizować etykiety: Niezgodność ID aktywnego profilu.');
+    }
+
+    try {
+      const url = `/labels/${updateData.id_label}`; // WYSYŁANIE ZGODNE Z TWOJĄ KONWENCJĄ: labelName i profileId w body
+
       await http.put(url, {
         labelName: updateData.newName,
         profileId: updateData.fk_profile,
-      });
+      }); // Aktualizacja stanu lokalnego
 
-      // Aktualizacja stanu lokalnego
-      if (profileStore.activeProfileId === updateData.fk_profile) {
-        const labelToUpdate = labels.value.find((l) => l.id_label === updateData.id_label);
-        if (labelToUpdate) {
-          labelToUpdate.name = updateData.newName;
-        }
+      const labelToUpdate = labels.value.find((l) => l.id_label === updateData.id_label);
+      if (labelToUpdate) {
+        labelToUpdate.name = updateData.newName;
       }
       return {
         success: true,
@@ -146,35 +123,39 @@ export const useLabelStore = defineStore('label', () => {
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
-  }
-
-  /**
+  } /**
    * Usuwa etykietę (DELETE).
    */
+
   async function deleteLabel(labelId: number, profileId: number) {
+    // ZMIANA 6: Dodatkowe sprawdzenie, czy operacja dotyczy aktualnie aktywnego, zweryfikowanego profilu
+    const currentActiveId = verifiedActiveProfileId.value;
+    if (!currentActiveId || profileId !== currentActiveId) {
+      throw new Error('Nie można usunąć etykiety: Niezgodność ID aktywnego profilu.');
+    }
+
     try {
       // WYSYŁANIE ZGODNE Z TWOJĄ KONWENCJĄ: profileId w query stringu
       const url = `/labels/${labelId}?profileId=${profileId}`;
 
-      await http.delete(url);
+      await http.delete(url); // Usunięcie ze stanu lokalnego
 
-      // Usunięcie ze stanu lokalnego
       labels.value = labels.value.filter((l) => l.id_label !== labelId);
 
       return { success: true, message: `Etykieta z ID ${labelId} została usunięta.` };
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
-  }
+  } // Zwrócenie stanu i akcji
 
-  // Zwrócenie stanu i akcji
   return {
     labels,
+    activeLabels, // ZWRACAMY NOWY BEZPIECZNY GETTER
     isLoading,
     labelCount,
     fetchLabels,
     addLabel,
-    updateLabel, // NOWA METODA
-    deleteLabel, // NOWA METODA
+    updateLabel,
+    deleteLabel,
   };
 });

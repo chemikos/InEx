@@ -1,7 +1,7 @@
 // src/stores/itemStore.ts
 
-import { defineStore } from 'pinia';
-import { ref, computed, watch } from 'vue';
+import { defineStore, storeToRefs } from 'pinia'; // Dodano storeToRefs
+import { ref, computed } from 'vue';
 import http from '@/api/http';
 import { isAxiosError } from 'axios';
 import { useProfileStore } from './profileStore';
@@ -43,19 +43,38 @@ function getErrorMessage(error: unknown): string {
 }
 
 export const useItemStore = defineStore('item', () => {
-  const profileStore = useProfileStore();
-  // --- STATE ---
+  const profileStore = useProfileStore(); // ZMIANA 1: Używamy storeToRefs do uzyskania reaktywnego, zweryfikowanego ID
+  const { verifiedActiveProfileId } = storeToRefs(profileStore); // --- STATE ---
+
   const items = ref<Item[]>([]);
   const isLoading = ref(false); // --- GETTERS (Computed) ---
 
-  const itemCount = computed(() => items.value.length); // --- ACTIONS ---
+  const itemCount = computed(() => items.value.length); // ZMIANA 2: Nowy getter, który zwraca listę pozycji tylko, jeśli profil jest zweryfikowany
+  const activeItems = computed(() => {
+    if (verifiedActiveProfileId.value === null) {
+      return [];
+    }
+    return items.value;
+  }); // --- ACTIONS ---
+  /**
+   * Pobiera listę pozycji wydatków dla danego profilu (GET).
+   */
 
   async function fetchItems(profileId: number) {
+    // ZMIANA 3: Wymuszamy sprawdzenie ID. Jeśli jest null/0, resetujemy dane i przerywamy.
     if (!profileId) {
-      // Jeśli nie ma ID, resetujemy dane i przerywamy.
+      items.value = [];
+      return;
+    } // Dodatkowe zabezpieczenie: Upewnij się, że profil jest aktualnie aktywny
+
+    if (profileId !== verifiedActiveProfileId.value) {
+      console.warn(
+        'Próba pobrania pozycji wydatków dla nieaktywnego lub niezsynchronizowanego profilu.',
+      );
       items.value = [];
       return;
     }
+
     isLoading.value = true;
     try {
       const response = await http.get(`/items?profileId=${profileId}`);
@@ -66,121 +85,92 @@ export const useItemStore = defineStore('item', () => {
     } finally {
       isLoading.value = false;
     }
-  }
-
-  // === KLUCZOWA LOGIKA REAKTYWNOŚCI ===
-  // Obserwowanie zmiany aktywnego profilu i wywoływanie fetchCategories
-  watch(
-    () => profileStore.activeProfileId,
-    (newId) => {
-      // Wywołaj funkcję fetchCategories dla nowego ID (może być null)
-      if (newId !== null) {
-        fetchItems(newId);
-      } else {
-        items.value = []; // Wyczyść, jeśli nie ma aktywnego profilu
-      }
-    },
-    { immediate: true }, // Uruchom watchera od razu, gdy Store jest inicjowany
-  );
-  // ===================================
+  } /**
+   * Dodaje nową pozycję (POST).
+   */
 
   async function addItem(itemData: NewItemData) {
     if (!itemData.itemName || !itemData.categoryId) {
       throw new Error('Nazwa pozycji i kategoria są wymagane.');
+    } // ZMIANA 4: Zabezpieczenie: Tylko dla aktywnego, zweryfikowanego profilu
+
+    const currentActiveId = verifiedActiveProfileId.value;
+    if (!currentActiveId || itemData.profileId !== currentActiveId) {
+      throw new Error('Nie można dodać pozycji: Niezgodność ID aktywnego profilu.');
     }
 
     try {
-      // const response = await http.post('/items', itemData);
-      // const data = response.data; // Backend prawdopodobnie zwróciłby pełny obiekt z nazwami,
-      // // ale na potrzeby szybkiego dodania do stanu użyjemy Twojego mocka
-
-      // const newItem: Item = {
-      //   id_item: data.itemId,
-      //   name: itemData.itemName,
-      //   fk_profile: itemData.profileId,
-      //   fk_category: itemData.categoryId,
-      //   category_name: 'Nieznana (przeładuj)', // Placeholder
-      //   labels: [], // Placeholder
-      //   label_ids: itemData.labelIds,
-      // };
-
-      // items.value.push(newItem);
-      // return { item: newItem, message: data.message };
-
       const response = await http.post('/items', itemData);
-      const data = response.data;
-      // Jeżeli dodanie się powiodło i jest aktywny profil
-      if (profileStore.activeProfileId === itemData.profileId) {
-        const newItem: Item = {
-          id_item: data.itemId, // Zakładamy, że backend zwraca ID
-          name: itemData.itemName,
-          fk_profile: itemData.profileId,
-          fk_category: itemData.categoryId,
-          category_name: 'Nieznana (przeładuj)', // Placeholder
-          labels: [], // Placeholder
-          label_ids: itemData.labelIds,
-        };
-        // Dodajemy nową kategorię do lokalnego stanu
-        items.value.push(newItem);
-        return { item: newItem, message: data.message };
-      }
-
-      return { item: null, message: data.message };
+      const data = response.data; // Jeżeli dodanie się powiodło
+      const newItem: Item = {
+        id_item: data.itemId, // Zakładamy, że backend zwraca ID
+        name: itemData.itemName,
+        fk_profile: itemData.profileId,
+        fk_category: itemData.categoryId,
+        category_name: 'Nieznana (przeładuj)', // Placeholder
+        labels: [], // Placeholder
+        label_ids: itemData.labelIds,
+      }; // Dodajemy nową pozycję do lokalnego stanu
+      items.value.push(newItem);
+      return { item: newItem, message: data.message };
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
-  }
-
-  /**
-   * Aktualizuje istniejącą pozycję (PUT) - Zmiana tylko Nazwy.
-   * UWAGA: Pełna edycja wymagałaby przekazania kategorii i etykiet.
+  } /**
+   * Aktualizuje istniejącą pozycję (PUT).
    */
-  async function updateItem(updateData: UpdateItemData) {
-    try {
-      const url = `/items/${updateData.id_item}`;
 
-      // WYSYŁANIE ZGODNE Z TWOJĄ KONWENCJĄ: profileId, itemName, categoryId, labelIds w body
+  async function updateItem(updateData: UpdateItemData) {
+    // ZMIANA 5: Zabezpieczenie: Tylko dla aktywnego, zweryfikowanego profilu
+    const currentActiveId = verifiedActiveProfileId.value;
+    if (!currentActiveId || updateData.fk_profile !== currentActiveId) {
+      throw new Error('Nie można zaktualizować pozycji: Niezgodność ID aktywnego profilu.');
+    }
+
+    try {
+      const url = `/items/${updateData.id_item}`; // WYSYŁANIE ZGODNE Z TWOJĄ KONWENCJĄ: profileId, itemName, categoryId, labelIds w body
+
       await http.put(url, {
         profileId: updateData.fk_profile,
         itemName: updateData.newName,
         categoryId: updateData.fk_category, // Wymagane
         labelIds: updateData.label_ids || [], // Opcjonalne
-      });
+      }); // Aktualizacja stanu lokalnego
 
-      // Aktualizacja stanu lokalnego
-      if (profileStore.activeProfileId === updateData.fk_profile) {
-        const itemToUpdate = items.value.find((i) => i.id_item === updateData.id_item);
-        if (itemToUpdate) {
-          // Aktualizujemy tylko zmienioną nazwę
-          itemToUpdate.name = updateData.newName;
-
-          // **UWAGA:** Jeśli edycja pozycji miałaby zmieniać kategorię/etykiety,
-          // musielibyśmy tu aktualizować również category_name, labels, fk_category i label_ids
-          // na podstawie danych zwróconych przez backend (lub użyć tu danych z updateData).
-          // Na potrzeby edycji inline nazwy, ta zmiana jest wystarczająca.
-        }
+      const itemToUpdate = items.value.find((i) => i.id_item === updateData.id_item);
+      if (itemToUpdate) {
+        // Aktualizujemy dane
+        itemToUpdate.name = updateData.newName;
+        itemToUpdate.fk_category = updateData.fk_category;
+        itemToUpdate.label_ids = updateData.label_ids; // W idealnym świecie backend zwróciłby category_name i labels, ale na razie używamy dostarczonych ID
+        // Lepszym rozwiązaniem byłoby wymusić przeładowanie wszystkich Items (fetchItems) po udanej edycji,
+        // aby mieć pewność, że wszystkie nazwy (kategorii i etykiet) są aktualne.
       }
 
       return {
         success: true,
-        message: `Nazwa pozycji z ID ${updateData.id_item} została zaktualizowana na: ${updateData.newName}.`,
+        message: `Pozycja z ID ${updateData.id_item} została zaktualizowana na: ${updateData.newName}.`,
       };
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
-  }
-
-  /**
+  } /**
    * Usuwa pozycję wydatków (DELETE).
    */
+
   async function deleteItem(itemId: number, profileId: number) {
+    // ZMIANA 6: Zabezpieczenie: Tylko dla aktywnego, zweryfikowanego profilu
+    const currentActiveId = verifiedActiveProfileId.value;
+    if (!currentActiveId || profileId !== currentActiveId) {
+      throw new Error('Nie można usunąć pozycji: Niezgodność ID aktywnego profilu.');
+    }
+
     try {
       // WYSYŁANIE ZGODNE Z KONWENCJĄ: profileId w query stringu
       const url = `/items/${itemId}?profileId=${profileId}`;
 
-      await http.delete(url);
+      await http.delete(url); // Usunięcie ze stanu lokalnego
 
-      // Usunięcie ze stanu lokalnego
       items.value = items.value.filter((i) => i.id_item !== itemId);
 
       return { success: true, message: `Pozycja z ID ${itemId} została usunięta.` };
@@ -191,6 +181,7 @@ export const useItemStore = defineStore('item', () => {
 
   return {
     items,
+    activeItems, // Nowy bezpieczny getter
     isLoading,
     itemCount,
     fetchItems,

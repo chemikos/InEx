@@ -1,10 +1,9 @@
-import { defineStore } from 'pinia';
-import { ref, computed, watch } from 'vue';
+import { defineStore, storeToRefs } from 'pinia';
+import { ref, computed } from 'vue';
 import http from '@/api/http';
 import { isAxiosError } from 'axios';
 import { useProfileStore } from './profileStore';
 
-// Definicja typu dla Kategorii
 export interface Category {
   id_category: number;
   name: string;
@@ -14,7 +13,6 @@ export interface NewCategoryData {
   categoryName: string;
   profileId: number;
 }
-// NOWY TYP DANYCH dla aktualizacji
 export interface UpdateCategoryData {
   id_category: number;
   newName: string;
@@ -33,22 +31,28 @@ function getErrorMessage(error: unknown): string {
 }
 
 export const useCategoryStore = defineStore('category', () => {
-  const profileStore = useProfileStore();
-  // --- STATE ---
+  const profileStore = useProfileStore(); // ZMIANA 1: Importujemy verifiedActiveProfileId, który jest strażnikiem
+  const { verifiedActiveProfileId } = storeToRefs(profileStore); // --- STATE ---
+
   const categories = ref<Category[]>([]);
-  const isLoading = ref(false);
+  const isLoading = ref(false); // --- GETTERS (Computed) ---
 
-  // --- GETTERS (Computed) ---
-  const categoryCount = computed(() => categories.value.length);
+  const categoryCount = computed(() => categories.value.length); // Getter dla listy rozwijanej/wyświetlania, który jest świadomy profilu
 
-  // --- ACTIONS ---
-
+  const activeCategories = computed(() => {
+    // Kategorie są ładowane tylko dla aktywnego, zweryfikowanego profilu
+    if (verifiedActiveProfileId.value === null) {
+      return [];
+    } // Zwracamy całą listę, ponieważ fetchCategories już filtruje po profilu
+    return categories.value;
+  }); // --- ACTIONS ---
   /**
    * Pobiera listę kategorii dla danego profilu (GET).
    */
+
   async function fetchCategories(profileId: number) {
+    // ZMIANA 2: Wymuszamy sprawdzenie ID. Jeśli jest null/0, przerywamy.
     if (!profileId) {
-      // Jeśli nie ma ID, resetujemy dane i przerywamy.
       categories.value = [];
       return;
     }
@@ -62,66 +66,52 @@ export const useCategoryStore = defineStore('category', () => {
     } finally {
       isLoading.value = false;
     }
-  }
-
-  // === KLUCZOWA LOGIKA REAKTYWNOŚCI ===
-  // Obserwowanie zmiany aktywnego profilu i wywoływanie fetchCategories
-  watch(
-    () => profileStore.activeProfileId,
-    (newId) => {
-      // Wywołaj funkcję fetchCategories dla nowego ID (może być null)
-      if (newId !== null) {
-        fetchCategories(newId);
-      } else {
-        categories.value = []; // Wyczyść, jeśli nie ma aktywnego profilu
-      }
-    },
-    { immediate: true }, // Uruchom watchera od razu, gdy Store jest inicjowany
-  );
-  // ===================================
-
-  /**
+  } /**
    * Dodaje nową kategorię (POST).
    */
   async function addCategory(categoryData: NewCategoryData) {
-    if (!categoryData.categoryName) throw new Error('Nazwa kategorii jest wymagana.');
+    if (!categoryData.categoryName) throw new Error('Nazwa kategorii jest wymagana.'); // ZMIANA 3: Dodatkowe sprawdzenie, czy operacja dotyczy aktualnie aktywnego, zweryfikowanego profilu
+
+    const currentActiveId = verifiedActiveProfileId.value;
+    if (!currentActiveId || categoryData.profileId !== currentActiveId) {
+      throw new Error(
+        'Nie można dodać kategorii: Brak aktywnego profilu lub niezgodność ID profilu.',
+      );
+    }
 
     try {
       const response = await http.post('/categories', categoryData);
-      const data = response.data;
-      // Jeżeli dodanie się powiodło i jest aktywny profil
-      if (profileStore.activeProfileId === categoryData.profileId) {
-        const newCategory: Category = {
-          id_category: data.categoryId, // Zakładamy, że backend zwraca ID
-          name: categoryData.categoryName,
-          fk_profile: categoryData.profileId,
-        };
-        // Dodajemy nową kategorię do lokalnego stanu
-        categories.value.push(newCategory);
-        return { category: newCategory, message: data.message };
-      }
-
-      return { category: null, message: data.message };
+      const data = response.data; // Jeżeli dodanie się powiodło i jest aktywny profil
+      const newCategory: Category = {
+        id_category: data.categoryId, // Zakładamy, że backend zwraca ID
+        name: categoryData.categoryName,
+        fk_profile: categoryData.profileId,
+      }; // Dodajemy nową kategorię do lokalnego stanu (tylko jeśli jest dla aktywnego profilu)
+      categories.value.push(newCategory);
+      return { category: newCategory, message: data.message };
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
   } /**
    * Aktualizuje istniejącą kategorię (PUT).
    */
-
   async function updateCategory(updateData: UpdateCategoryData) {
+    // ZMIANA 4: Dodatkowe sprawdzenie, czy operacja dotyczy aktualnie aktywnego, zweryfikowanego profilu
+    const currentActiveId = verifiedActiveProfileId.value;
+    if (!currentActiveId || updateData.fk_profile !== currentActiveId) {
+      throw new Error('Nie można zaktualizować kategorii: Niezgodność ID aktywnego profilu.');
+    }
+
     try {
       const url = `/categories/${updateData.id_category}`; // Wysyłamy zapytanie PUT z nową nazwą
 
       await http.put(url, { categoryName: updateData.newName, profileId: updateData.fk_profile }); // Aktualizacja stanu lokalnego (tylko jeśli profil się zgadza)
 
-      if (profileStore.activeProfileId === updateData.fk_profile) {
-        const categoryToUpdate = categories.value.find(
-          (c) => c.id_category === updateData.id_category,
-        );
-        if (categoryToUpdate) {
-          categoryToUpdate.name = updateData.newName;
-        }
+      const categoryToUpdate = categories.value.find(
+        (c) => c.id_category === updateData.id_category,
+      );
+      if (categoryToUpdate) {
+        categoryToUpdate.name = updateData.newName;
       }
 
       return {
@@ -131,35 +121,38 @@ export const useCategoryStore = defineStore('category', () => {
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
-  }
-
-  /**
+  } /**
    * Usuwa kategorię (DELETE).
    */
+
   async function deleteCategory(categoryId: number, profileId: number) {
+    // ZMIANA 5: Dodatkowe sprawdzenie, czy operacja dotyczy aktualnie aktywnego, zweryfikowanego profilu
+    const currentActiveId = verifiedActiveProfileId.value;
+    if (!currentActiveId || profileId !== currentActiveId) {
+      throw new Error('Nie można usunąć kategorii: Niezgodność ID aktywnego profilu.');
+    }
+
     try {
-      const url = `/categories/${categoryId}?profileId=${profileId}`;
+      const url = `/categories/${categoryId}?profileId=${profileId}`; // Wysyłamy zapytanie DELETE
 
-      // Wysyłamy zapytanie DELETE
-      await http.delete(url);
+      await http.delete(url); // Usunięcie ze stanu lokalnego
 
-      // Usunięcie ze stanu lokalnego
       categories.value = categories.value.filter((c) => c.id_category !== categoryId);
 
       return { success: true, message: `Kategoria z ID ${categoryId} została usunięta.` };
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
-  }
+  } // Zwrócenie stanu i akcji
 
-  // Zwrócenie stanu i akcji
   return {
     categories,
+    activeCategories, // ZWRACAMY NOWY GETTER dla komponentów
     isLoading,
     categoryCount,
     fetchCategories,
     addCategory,
-    updateCategory, // NOWA METODA
-    deleteCategory, // NOWA METODA
+    updateCategory,
+    deleteCategory,
   };
 });
