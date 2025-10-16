@@ -39,8 +39,7 @@ const {
   getErrorIfAmountInvalid,
   getErrorIfDateInvalid,
   getValidationError,
-  getNormalizedId,
-  getNormalizedDate,
+  getNormalizedValue,
   getNormalizedValuesAndPushToParams,
 } = require('../helpers/helpers.js');
 

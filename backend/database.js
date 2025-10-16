@@ -162,7 +162,7 @@ const db = new sqlite3.Database('db/InEx.db', (err) => {
 //       fk_category INTEGER,
 //       PRIMARY KEY (fk_item, fk_category),
 //       FOREIGN KEY (fk_item) REFERENCES items(id_item),
-//       FOREIGN KEY (fk_category) REFERENCES category(id_category)
+//       FOREIGN KEY (fk_category) REFERENCES categories(id_category)
 //     )
 //   `);
 

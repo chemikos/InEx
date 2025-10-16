@@ -39,8 +39,7 @@ const {
   getErrorIfAmountInvalid,
   getErrorIfDateInvalid,
   getValidationError,
-  getNormalizedId,
-  getNormalizedDate,
+  getNormalizedValue,
   getNormalizedValuesAndPushToParams,
 } = require('../helpers/helpers.js');
 
@@ -94,7 +93,7 @@ router.post('/', async (req, res) => {
 router.get('/', async (req, res) => {
   const validationParams = [
     {
-      value: getNormalizedId(req.query.profileId),
+      value: getNormalizedValue(req.query.profileId),
       field: 'id',
       type: 'profile',
     },
@@ -124,7 +123,7 @@ router.get('/', async (req, res) => {
 router.get('/:sourceId', async (req, res) => {
   const validationParams = [
     {
-      value: getNormalizedId(req.query.profileId),
+      value: getNormalizedValue(req.query.profileId),
       field: 'id',
       type: 'profile',
     },
@@ -228,7 +227,7 @@ router.put('/:sourceId', async (req, res) => {
 router.delete('/:sourceId', async (req, res) => {
   const validationParams = [
     {
-      value: getNormalizedId(req.query.profileId),
+      value: getNormalizedValue(req.query.profileId),
       field: 'id',
       type: 'profile',
     },

@@ -39,8 +39,7 @@ const {
   getErrorIfAmountInvalid,
   getErrorIfDateInvalid,
   getValidationError,
-  getNormalizedId,
-  getNormalizedDate,
+  getNormalizedValue,
   getNormalizedValuesAndPushToParams,
 } = require('../helpers/helpers.js');
 
@@ -106,7 +105,7 @@ router.post('/', async (req, res) => {
 router.get('/', async (req, res) => {
   const validationParams = [
     {
-      value: getNormalizedId(req.query.profileId),
+      value: getNormalizedValue(req.query.profileId),
       field: 'id',
       type: 'profile',
     },
@@ -136,7 +135,7 @@ router.get('/', async (req, res) => {
     }
   }
   const profileId = validationParams[0].value;
-  const dateFrom = req.query.dateFrom || '2020-02-10';
+  const dateFrom = req.query.dateFrom || '2000-01-01';
   const dateTo = req.query.dateTo || new Date().toISOString().slice(0, 10);
   if (req.query.dateFrom && !validateDate(dateFrom)) {
     return res
@@ -147,6 +146,21 @@ router.get('/', async (req, res) => {
     return res
       .status(400)
       .json({ message: 'Data końcowa zawiera niepoprawne dane.' });
+  }
+  if (
+    req.query.dateFrom &&
+    req.query.dateTo &&
+    new Date(dateFrom) > new Date(dateTo)
+  ) {
+    return res
+      .status(400)
+      .json({ message: 'Data początkowa jest większa niż data końcowa.' });
+  }
+  const offset = req.query.offset ? Number(req.query.offset) : 0;
+  if (!Number.isInteger(offset) || offset < 0) {
+    return res
+      .status(400)
+      .json({ message: 'Offset zawiera niepoprawne dane.' });
   }
   try {
     if (!(await checkProfileExists(profileId))) {
@@ -166,8 +180,8 @@ router.get('/', async (req, res) => {
         i.id_item AS fk_item,
         c.id_category AS fk_category,
         e.fk_profile,
-       GROUP_CONCAT(l.name) AS labels,
-       GROUP_CONCAT(l.id_label) AS label_ids
+       GROUP_CONCAT(DISTINCT l.name) AS labels,
+       GROUP_CONCAT(DISTINCT l.id_label) AS label_ids
       FROM expenses e
       JOIN items i ON e.fk_item = i.id_item
       JOIN item_category ic ON i.id_item = ic.fk_item
@@ -195,10 +209,14 @@ router.get('/', async (req, res) => {
       params.push(...itemIds);
     }
     sql += ` GROUP BY e.id_expense
-      ORDER BY e.date DESC, c.name, i.name
-      LIMIT 50;`;
-    const resultExpenses = await db.allPromise(sql, params);
+      ORDER BY e.date DESC, c.name, i.name`;
+    if (offset > 0) {
+      params.push(offset);
+      sql += ` LIMIT 25 OFFSET ?`;
+    }
+    sql += ';';
 
+    const resultExpenses = await db.allPromise(sql, params);
     const processedExpenses = resultExpenses.map((expense) => {
       return {
         ...expense,
@@ -221,7 +239,7 @@ router.get('/', async (req, res) => {
 router.get('/:expenseId', async (req, res) => {
   const validationParams = [
     {
-      value: getNormalizedId(req.query.profileId),
+      value: getNormalizedValue(req.query.profileId),
       field: 'id',
       type: 'profile',
     },
@@ -360,7 +378,7 @@ router.put('/:expenseId', async (req, res) => {
 router.delete('/:expenseId', async (req, res) => {
   const validationParams = [
     {
-      value: getNormalizedId(req.query.profileId),
+      value: getNormalizedValue(req.query.profileId),
       field: 'id',
       type: 'profile',
     },

@@ -163,7 +163,7 @@ function validateAmount(amount) {
   if (
     typeof parsedAmount !== 'number' ||
     isNaN(parsedAmount) ||
-    parsedAmount <= 0
+    parsedAmount < 0
   ) {
     return false;
   }
@@ -188,9 +188,10 @@ function validateDate(date) {
   ) {
     return false;
   }
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return d <= today;
+  // const today = new Date();
+  // today.setHours(0, 0, 0, 0);
+  // return d <= today;
+  return true;
 }
 
 function validateCollectionOf(collection, field_type) {
@@ -276,13 +277,13 @@ function getErrorIfDateInvalid(date) {
     return 'Data jest wymagana.';
   }
   if (!validateDate(date)) {
-    return 'Data zawiera niepoprawne dane lub jest w przyszłości.';
+    return 'Data zawiera niepoprawne dane.';
   }
   return null;
 }
 
 function getValidationError(value, field, type) {
-  let error = 'null';
+  let error = null;
   switch (field) {
     case 'id':
       error = getErrorIfIdInvalid(value, type);
@@ -302,13 +303,21 @@ function getValidationError(value, field, type) {
   return error;
 }
 
-function getNormalizedId(rawId) {
-  return Array.isArray(rawId) ? rawId[0] : rawId;
+function getNormalizedValue(rawValue) {
+  return Array.isArray(rawValue) ? rawValue[0] : rawValue;
 }
 
-function getNormalizedDate(rawDate) {
-  return Array.isArray(rawDate) ? rawDate[0] : rawDate;
-}
+// function getNormalizedId(rawId) {
+//   return Array.isArray(rawId) ? rawId[0] : rawId;
+// }
+
+// function getNormalizedOffset(rawOffset) {
+//   return Array.isArray(rawOffset) ? rawOffset[0] : rawOffset;
+// }
+
+// function getNormalizedDate(rawDate) {
+//   return Array.isArray(rawDate) ? rawDate[0] : rawDate;
+// }
 
 function getNormalizedValuesAndPushToParams(params, values, field, type) {
   const normalizedValues = [...new Set(values || [])];
@@ -343,7 +352,6 @@ module.exports = {
   getErrorIfAmountInvalid,
   getErrorIfDateInvalid,
   getValidationError,
-  getNormalizedId,
-  getNormalizedDate,
+  getNormalizedValue,
   getNormalizedValuesAndPushToParams,
 };
