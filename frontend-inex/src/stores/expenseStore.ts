@@ -34,6 +34,18 @@ export interface UpdateExpenseData {
   itemId: number;
 }
 
+export interface ExpenseTotals {
+  AllTimeExpenses: number;
+  CurrentYearExpenses: number;
+  CurrentMonthExpenses: number;
+}
+
+// NOWY TYP: Interfejs dla opcjonalnych parametrów filtrowania dat
+export interface ExpenseFilterParams {
+  dateFrom?: string | null;
+  dateTo?: string | null;
+}
+
 // --- HELPER FUNKCJA DO OBSŁUGI BŁĘDÓW ---
 function getErrorMessage(error: unknown): string {
   if (isAxiosError(error)) {
@@ -55,48 +67,73 @@ export const useExpenseStore = defineStore('expense', () => {
   // --- STATE ---
 
   const expenses = ref<Expense[]>([]);
-  const isLoading = ref(false); // --- GETTERS (Computed) ---
+  const isLoading = ref(false);
+  const totals = ref<ExpenseTotals>({
+    AllTimeExpenses: 0,
+    CurrentYearExpenses: 0,
+    CurrentMonthExpenses: 0,
+  });
 
-  const totalExpenses = computed(() => {
+  // --- GETTERS (Computed) ---
+
+  const filteredtotalExpenses = computed(() => {
     // Obliczanie sumy wydatków
     return expenses.value.reduce((sum, expense) => sum + expense.amount, 0).toFixed(2);
-  }); // NOWY GETTER: Zwraca listę wydatków tylko dla zweryfikowanego profilu
+  });
+  // Zwraca listę wydatków tylko dla zweryfikowanego profilu
   const activeExpenses = computed(() => {
     if (verifiedActiveProfileId.value === null) {
       return [];
     }
     return expenses.value;
-  }); // --- ACTIONS ---
+  });
+
+  // --- ACTIONS ---
   /**
    * Pobiera listę wydatków dla danego profilu (GET).
+   * Dodano obsługę opcjonalnych filtrów dat.
    */
-
-  async function fetchExpenses(profileId: number) {
-    // Zabezpieczenie: Jeśli ID nie jest poprawne, resetujemy i wychodzimy.
-    if (!profileId) {
+  async function fetchExpenses(profileId: number, filters: ExpenseFilterParams = {}) {
+    // Zabezpieczenia jak poprzednio
+    if (!profileId || profileId !== verifiedActiveProfileId.value) {
       expenses.value = [];
-      return;
-    } // Dodatkowe zabezpieczenie: Upewnij się, że profil jest aktualnie aktywny
-    if (profileId !== verifiedActiveProfileId.value) {
+      if (!profileId) return;
       console.warn('Próba pobrania wydatków dla nieaktywnego lub niezsynchronizowanego profilu.');
-      expenses.value = [];
       return;
     }
 
     isLoading.value = true;
     try {
-      const response = await http.get(`/expenses?profileId=${profileId}`);
-      expenses.value = response.data as Expense[];
+      // Konstruowanie URL z parametrami zapytania
+      const params = new URLSearchParams();
+      params.append('profileId', profileId.toString());
+
+      if (filters.dateFrom) {
+        params.append('dateFrom', filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        params.append('dateTo', filters.dateTo);
+      }
+
+      const url = `/expenses?${params.toString()}`;
+
+      const response = await http.get(url);
+      expenses.value = response.data.data as Expense[];
+      totals.value.AllTimeExpenses = response.data.totals.AllTime;
+      totals.value.CurrentYearExpenses = response.data.totals.CurrentYear;
+      totals.value.CurrentMonthExpenses = response.data.totals.CurrentMonth;
+      console.log('toatal: ' + totals.value.AllTimeExpenses);
     } catch (error) {
       console.error(`Błąd podczas pobierania wydatków dla profilu ${profileId}:`, error);
       expenses.value = [];
     } finally {
       isLoading.value = false;
     }
-  } /**
+  }
+
+  /**
    * Dodaje nowy wydatek (POST).
    */
-
   async function addExpense(expenseData: NewExpenseData) {
     if (!expenseData.amount || !expenseData.date || !expenseData.itemId) {
       throw new Error('Kwota, data i pozycja wydatku są wymagane.');
@@ -128,10 +165,11 @@ export const useExpenseStore = defineStore('expense', () => {
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
-  } /**
+  }
+
+  /**
    * Aktualizuje istniejący wydatek (PUT).
    */
-
   async function updateExpense(
     updateData: UpdateExpenseData,
     itemDetails: Pick<
@@ -175,10 +213,11 @@ export const useExpenseStore = defineStore('expense', () => {
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
-  } /**
+  }
+
+  /**
    * Usuwa wydatek (DELETE).
    */
-
   async function deleteExpense(expenseId: number, profileId: number) {
     // Zabezpieczenie: Tylko dla aktywnego, zweryfikowanego profilu
     const currentActiveId = verifiedActiveProfileId.value;
@@ -198,13 +237,15 @@ export const useExpenseStore = defineStore('expense', () => {
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
-  } // Zwrócenie stanu i akcji
+  }
 
+  // Zwrócenie stanu i akcji
   return {
     expenses,
     activeExpenses, // Nowy bezpieczny getter
     isLoading,
-    totalExpenses,
+    totals,
+    filteredtotalExpenses,
     fetchExpenses,
     addExpense,
     updateExpense,
