@@ -63,7 +63,7 @@ router.post('/', async (req, res) => {
     {
       value: req.body.date,
       field: 'date',
-      type: null,
+      type: 'income',
     },
   ];
   for (const param of validationParams) {
@@ -241,7 +241,7 @@ router.put('/:incomeId', async (req, res) => {
     {
       value: req.body.date,
       field: 'date',
-      type: null,
+      type: 'income',
     },
     {
       value: req.params.incomeId,
