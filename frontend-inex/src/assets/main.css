@@ -131,6 +131,11 @@ tbody tr:hover {
 .inline-block {
   display: inline-block;
 }
+.inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .rounded-full {
   border-radius: 9999px;
 }
