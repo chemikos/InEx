@@ -272,12 +272,37 @@ function getErrorIfAmountInvalid(amount) {
   return null;
 }
 
-function getErrorIfDateInvalid(date) {
+function getErrorIfDateInvalid(date, type) {
+  // const types = ['expense', 'income', 'from', 'to'];
+  // if (!types.includes(type)) {
+  //   return 'Podany typ daty nie jest poprawny.';
+  // }
+  let dateType = '';
+  switch (type) {
+    case 'expense':
+      dateType = 'wydatku';
+      if (!date) {
+        return `Data ${dateType} jest wymagana.`;
+      }
+      break;
+    case 'income':
+      dateType = 'wpłaty';
+    case 'from':
+      dateType = 'początkowa';
+    case 'to':
+      dateType = 'końcowa';
+      break;
+    default:
+      return 'Podany typ daty nie jest poprawny.';
+  }
+  // if (!date) {
+  //   return 'Data jest wymagana.';
+  // }
   if (!date) {
-    return 'Data jest wymagana.';
+    return null;
   }
   if (!validateDate(date)) {
-    return 'Data zawiera niepoprawne dane.';
+    return `Data ${dateType} zawiera niepoprawne dane.`;
   }
   return null;
 }
@@ -295,7 +320,7 @@ function getValidationError(value, field, type) {
       error = getErrorIfAmountInvalid(value);
       break;
     case 'date':
-      error = getErrorIfDateInvalid(value);
+      error = getErrorIfDateInvalid(value, type);
       break;
     default:
       return 'Podany typ pola jest niepoprawny.';
