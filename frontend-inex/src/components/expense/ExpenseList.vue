@@ -234,7 +234,7 @@ const confirmDelete = async (
 </script>
 
 <template>
-  <div class="table-container expense-list-container">
+  <div class="table-container expense-list-container padding-left padding-right">
     <h3 class="form-title expense-title-border">Wszystkie Wydatki</h3>
     <p class="expense-summary-box">
       <span>
@@ -400,10 +400,7 @@ const confirmDelete = async (
         </tbody>
       </table>
     </div>
-
-    <div v-else class="text-center py-4 text-gray-500 border p-3 rounded">
-      Brak wydatków do wyświetlenia dla tego profilu lub w wybranym okresie.
-    </div>
+    <div v-else class="msg-box msg-error">Brak wydatków do wyświetlenia w wybranym okresie.</div>
   </div>
 </template>
 

@@ -302,6 +302,14 @@ tbody tr:hover {
   margin-top: 1.5rem;
 }
 
+.padding-left {
+  padding-left: 20px;
+}
+
+.padding-right {
+  padding-right: 20px;
+}
+
 /* Podstawowy styl tabeli */
 .data-table {
   width: 100%;

@@ -161,15 +161,15 @@ const confirmDelete = async (incomeId: number, amount: number, profileId: number
 </script>
 
 <template>
-  <div class="table-container income-list-container">
+  <div class="table-container income-list-container padding-left padding-right">
     <h3 class="form-title income-title-border">Ostatnie Wpłaty</h3>
     <div
       v-if="message.text"
+      class="msg-box"
       :class="{
-        'bg-green-100 border-green-400 text-green-700': message.type === 'success',
-        'bg-red-100 border-red-400 text-red-700': message.type === 'error',
+        'msg-success': message.type === 'success',
+        'msg-error': message.type === 'error',
       }"
-      class="p-3 border rounded-md mb-4 text-sm"
     >
       {{ message.text }}
     </div>

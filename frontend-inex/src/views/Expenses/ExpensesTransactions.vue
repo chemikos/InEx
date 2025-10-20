@@ -15,10 +15,10 @@ import IncomeList from '@/components/income/IncomeList.vue';
       <AddIncomeForm />
     </div>
 
-    <h3 class="subsection-title">Wydatki</h3>
+    <h3 class="subsection-title padding-left padding-right">Wydatki</h3>
     <ExpenseList />
 
-    <h3 class="subsection-title mt-8">Wpłaty</h3>
+    <h3 class="subsection-title padding-left padding-right mt-8">Wpłaty</h3>
     <IncomeList />
   </div>
 </template>

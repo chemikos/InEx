@@ -4,6 +4,38 @@ const db = require('../database');
 db.getPromise = util.promisify(db.get);
 db.allPromise = util.promisify(db.all);
 
+async function checkElementExists(elementId, elementType, profileId) {
+  let tableName = '';
+  switch (elementType) {
+    case 'profile':
+    case 'label':
+    case 'source':
+    case 'expense':
+    case 'income':
+    case 'item':
+      tableName = elementType + 's';
+      break;
+    case 'category':
+      tableName = 'categories';
+      break;
+    default:
+      const err = new Error(`Nieznany typ elementu: ${elementType}`);
+      err.statusCode = 400;
+      throw err;
+  }
+
+  const idColumn = `id_${elementType}`;
+  let query = `SELECT * FROM ${tableName} WHERE ${idColumn} = ?`;
+  let params = [elementId];
+  if (elementType !== 'profile') {
+    query += ` AND fk_profile = ?`;
+    params.push(profileId);
+  }
+
+  const result = await db.getPromise(query, params);
+  return !!result;
+}
+
 async function checkProfileExists(profileId) {
   const profileExists = await db.getPromise(
     'SELECT * FROM profiles WHERE id_profile = ?',
@@ -273,10 +305,6 @@ function getErrorIfAmountInvalid(amount) {
 }
 
 function getErrorIfDateInvalid(date, type) {
-  // const types = ['expense', 'income', 'from', 'to'];
-  // if (!types.includes(type)) {
-  //   return 'Podany typ daty nie jest poprawny.';
-  // }
   let dateType = '';
   switch (type) {
     case 'expense':
@@ -295,9 +323,6 @@ function getErrorIfDateInvalid(date, type) {
     default:
       return 'Podany typ daty nie jest poprawny.';
   }
-  // if (!date) {
-  //   return 'Data jest wymagana.';
-  // }
   if (!date) {
     return null;
   }
@@ -331,18 +356,6 @@ function getValidationError(value, field, type) {
 function getNormalizedValue(rawValue) {
   return Array.isArray(rawValue) ? rawValue[0] : rawValue;
 }
-
-// function getNormalizedId(rawId) {
-//   return Array.isArray(rawId) ? rawId[0] : rawId;
-// }
-
-// function getNormalizedOffset(rawOffset) {
-//   return Array.isArray(rawOffset) ? rawOffset[0] : rawOffset;
-// }
-
-// function getNormalizedDate(rawDate) {
-//   return Array.isArray(rawDate) ? rawDate[0] : rawDate;
-// }
 
 function getNormalizedValuesAndPushToParams(params, values, field, type) {
   const normalizedValues = [...new Set(values || [])];
