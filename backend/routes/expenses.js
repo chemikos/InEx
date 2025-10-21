@@ -279,6 +279,28 @@ router.get('/', async (req, res) => {
       CurrentMonth: totalExpenseCurrentMonth,
     };
 
+    const aggregatedExpense = await db.allPromise(
+      `SELECT i.name AS item_name, c.name AS category_name, ROUND(SUM(e.amount), 2) AS total
+      FROM expenses e
+      JOIN items i ON e.fk_item = i.id_item
+      JOIN item_category ic ON i.id_item = ic.fk_item
+      JOIN categories c ON ic.fk_category = c.id_category
+      WHERE e.fk_profile = ?
+      GROUP BY i.id_item, c.id_category`,
+      [profileId],
+    );
+
+    const aggregatedExpenseByLabel = await db.allPromise(
+      `SELECT l.name AS label_name, ROUND(SUM(e.amount), 2) AS total
+      FROM expenses e
+      JOIN items i ON e.fk_item = i.id_item
+      LEFT JOIN item_label il ON i.id_item = il.fk_item
+      LEFT JOIN labels l ON l.id_label = il.fk_label
+      WHERE e.fk_profile = ?
+      GROUP BY l.id_label`,
+      [profileId],
+    );
+
     const metadata = {
       totalCount,
       totalPages,
@@ -295,6 +317,10 @@ router.get('/', async (req, res) => {
       totals,
       metadata,
       data: processedExpenses,
+      aggregated: {
+        aggregatedExpense,
+        aggregatedExpenseByLabel,
+      },
     });
   } catch (err) {
     console.error('[GET /expenses] Błąd serwera:', err);

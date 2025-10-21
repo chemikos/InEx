@@ -81,7 +81,7 @@ export const useIncomeStore = defineStore('income', () => {
     isLoading.value = true;
     try {
       const response = await http.get(`/incomes?profileId=${profileId}`);
-      incomes.value = response.data as Income[];
+      incomes.value = response.data.data as Income[];
     } catch (error) {
       console.error(`Błąd podczas pobierania wpłat dla profilu ${profileId}:`, error);
       incomes.value = [];

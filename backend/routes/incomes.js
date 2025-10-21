@@ -109,6 +109,16 @@ router.get('/', async (req, res) => {
       field: 'id',
       type: 'profile',
     },
+    {
+      value: req.query.dateFrom || null,
+      field: 'date',
+      type: 'from',
+    },
+    {
+      value: req.query.dateTo || null,
+      field: 'date',
+      type: 'to',
+    },
   ];
   const sourceIds = getNormalizedValuesAndPushToParams(
     validationParams,
@@ -123,25 +133,36 @@ router.get('/', async (req, res) => {
     }
   }
   const profileId = validationParams[0].value;
-  const dateFrom = req.query.dateFrom || '2020-02-10';
-  const dateTo = req.query.dateTo || new Date().toISOString().slice(0, 10);
-  if (req.query.dateFrom && !validateDate(dateFrom)) {
+  const dateFrom = validationParams[1].value;
+  const dateTo = validationParams[2].value;
+
+  if (dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo)) {
     return res
       .status(400)
-      .json({ message: 'Data początkowa zawiera niepoprawne dane.' });
+      .json({ message: 'Data początkowa jest późniejsza niż data końcowa.' });
   }
-  if (req.query.dateTo && !validateDate(dateTo)) {
+
+  const limit = req.query.limit ? Number(req.query.limit) : 25;
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return res.status(400).json({ message: 'Limit zawiera niepoprawne dane.' });
+  }
+
+  const offset = req.query.offset ? Number(req.query.offset) : 0;
+  if (!Number.isInteger(offset) || offset < 0) {
     return res
       .status(400)
-      .json({ message: 'Data końcowa zawiera niepoprawne dane.' });
+      .json({ message: 'Offset zawiera niepoprawne dane.' });
   }
+
+  const page = Math.floor(offset / limit) + 1;
+
   try {
     if (!(await checkProfileExists(profileId))) {
       return res
         .status(404)
         .json({ message: 'Profil o podanym ID nie istnieje.' });
     }
-    const params = [dateFrom, dateTo, profileId];
+    const params = [profileId];
     let sql = `
         SELECT
             i.id_income,
@@ -149,23 +170,99 @@ router.get('/', async (req, res) => {
             i.date,
             s.name AS source_name,
             s.id_source,
-            i.fk_profile
+            i.fk_profile`;
+    let baseSQL = `
         FROM incomes i
         JOIN sources s ON i.fk_source = s.id_source
         WHERE 
-            i.date BETWEEN ? AND ? AND i.fk_profile = ?`;
+            i.fk_profile = ?`;
     if (sourceIds.length > 0) {
       const placeholders = new Array(sourceIds.length).fill('?').join(', ');
-      sql += ` AND i.fk_source IN (${placeholders})`;
+      baseSQL += ` AND i.fk_source IN (${placeholders})`;
       params.push(...sourceIds);
     }
+    if (dateFrom) {
+      baseSQL += ` AND i.date >= ?`;
+      params.push(dateFrom);
+    }
+    if (dateTo) {
+      baseSQL += ` And i.date <= ?`;
+      params.push(dateTo);
+    }
+
+    const countQuery = `SELECT COUNT(DISTINCT i.id_income) AS total ${baseSQL}`;
+    const countResult = await db.getPromise(countQuery, params);
+    const totalCount = countResult?.total || 0;
+    const totalPages = Math.ceil(totalCount / limit);
+
+    sql += baseSQL;
+
     sql += ` 
       ORDER BY
-        i.date DESC, s.name`;
+        i.date DESC, s.name      
+    LIMIT ? OFFSET ?`;
+    params.push(limit);
+    params.push(offset);
+
     const resultIncomes = await db.allPromise(sql, params);
-    return res.status(200).json(resultIncomes);
+
+    const totalIncomeAllTimeResult = await db.getPromise(
+      `SELECT ROUND(SUM(amount), 2) AS total FROM incomes WHERE fk_profile = ?;`,
+      [profileId],
+    );
+    const totalIncomeAllTime = totalIncomeAllTimeResult?.total || 0;
+
+    const totalIncomeCurrentYearResult = await db.getPromise(
+      `SELECT ROUND(SUM(amount), 2) AS total FROM incomes WHERE fk_profile = ? AND strftime('%Y', date) = strftime('%Y', 'now');`,
+      [profileId],
+    );
+    const totalIncomeCurrentYear = totalIncomeCurrentYearResult?.total || 0;
+
+    const totalIncomeCurrentMonthResult = await db.getPromise(
+      `SELECT ROUND(SUM(amount), 2) AS total FROM incomes WHERE fk_profile = ? AND strftime('%Y-%m', date) = strftime('%Y-%m', 'now');`,
+      [profileId],
+    );
+    const totalIncomeCurrentMonth = totalIncomeCurrentMonthResult?.total || 0;
+
+    const totals = {
+      AllTime: totalIncomeAllTime,
+      CurrentYear: totalIncomeCurrentYear,
+      CurrentMonth: totalIncomeCurrentMonth,
+    };
+
+    const aggregatedIncome = await db.allPromise(
+      `SELECT s.name AS source_name, ROUND(SUM(i.amount), 2) AS total
+       FROM incomes i
+       LEFT JOIN sources s ON s.id_source = i.fk_source
+       WHERE i.fk_profile = ?
+       GROUP BY s.name
+       ORDER BY s.name`,
+      [profileId],
+    );
+
+    const metadata = {
+      totalCount,
+      totalPages,
+      currentPage: page,
+      hasNext: page < totalPages,
+      hasPrevious: page > 1,
+      limit,
+      offset,
+      nextOffset: offset + limit < totalCount ? offset + limit : null,
+      previousOffset: offset - limit >= 0 ? offset - limit : null,
+    };
+
+    return res.status(200).json({
+      totals,
+      metadata,
+      data: resultIncomes,
+      aggregated: aggregatedIncome,
+    });
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    console.error('[GET /incomes] Błąd serwera:', err);
+    return res
+      .status(500)
+      .json({ message: 'Wystąpił błąd serwera. Spróbuj ponownie później.' });
   }
 });
 
