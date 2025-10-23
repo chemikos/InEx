@@ -30,6 +30,22 @@ export interface UpdateIncomeData {
   sourceId: number; // Musi być przekazane, choć na froncie nie edytujemy
 }
 
+export interface IncomeTotals {
+  AllTimeIncomes: number;
+  CurrentYearIncomes: number;
+  CurrentMonthIncomes: number;
+}
+
+export interface IncomeAggregated {
+  source_name: string;
+  total: number;
+}
+
+export interface IncomeFilterParams {
+  dateFrom?: string | null;
+  dateTo?: string | null;
+}
+
 // --- HELPER FUNKCJA DO OBSŁUGI BŁĘDÓW ---
 function getErrorMessage(error: unknown): string {
   if (isAxiosError(error)) {
@@ -51,8 +67,14 @@ export const useIncomeStore = defineStore('income', () => {
 
   const incomes = ref<Income[]>([]);
   const isLoading = ref(false); // --- GETTERS (Computed) ---
+  const totals = ref<IncomeTotals>({
+    AllTimeIncomes: 0,
+    CurrentYearIncomes: 0,
+    CurrentMonthIncomes: 0,
+  });
+  const aggregated = ref<IncomeAggregated[]>([]);
 
-  const totalIncomes = computed(() => {
+  const filteredTotalIncomes = computed(() => {
     return incomes.value.reduce((sum, income) => sum + income.amount, 0).toFixed(2);
   }); // Nowy getter: Zwraca listę przychodów tylko dla zweryfikowanego profilu
 
@@ -65,23 +87,38 @@ export const useIncomeStore = defineStore('income', () => {
   /**
    * Pobiera listę wpłat dla danego profilu (GET).
    */
-  async function fetchIncomes(profileId: number) {
+  async function fetchIncomes(profileId: number, filters: IncomeFilterParams = {}) {
     // Zabezpieczenie: Jeśli ID nie jest poprawne, resetujemy i wychodzimy.
-    if (!profileId) {
+    if (!profileId || profileId !== verifiedActiveProfileId.value) {
       incomes.value = [];
+      if (!profileId) return;
+      console.warn('Próba pobrania wydatków dla nieaktywnego lub niezsynchronizowanego profilu.');
       return;
     } // Dodatkowe zabezpieczenie: Upewnij się, że profil jest aktualnie aktywny
 
-    if (profileId !== verifiedActiveProfileId.value) {
-      console.warn('Próba pobrania wpłat dla nieaktywnego lub niezsynchronizowanego profilu.');
-      incomes.value = [];
-      return;
-    }
-
     isLoading.value = true;
     try {
-      const response = await http.get(`/incomes?profileId=${profileId}`);
+      // Konstruowanie URL z parametrami zapytania
+      const params = new URLSearchParams();
+      params.append('profileId', profileId.toString());
+
+      if (filters.dateFrom) {
+        params.append('dateFrom', filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        params.append('dateTo', filters.dateTo);
+      }
+
+      const url = `/incomes?${params.toString()}`;
+
+      const response = await http.get(url);
+
       incomes.value = response.data.data as Income[];
+      totals.value.AllTimeIncomes = response.data.totals.AllTime;
+      totals.value.CurrentYearIncomes = response.data.totals.CurrentYear;
+      totals.value.CurrentMonthIncomes = response.data.totals.CurrentMonth;
+      console.log('total: ' + totals.value.AllTimeIncomes);
+      aggregated.value = response.data.aggregated as IncomeAggregated[];
     } catch (error) {
       console.error(`Błąd podczas pobierania wpłat dla profilu ${profileId}:`, error);
       incomes.value = [];
@@ -183,7 +220,9 @@ export const useIncomeStore = defineStore('income', () => {
     incomes,
     activeIncomes, // Nowy bezpieczny getter
     isLoading,
-    totalIncomes,
+    totals,
+    aggregated,
+    filteredTotalIncomes,
     fetchIncomes,
     addIncome,
     updateIncome,

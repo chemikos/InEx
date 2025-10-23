@@ -14,7 +14,7 @@ const profileStore = useProfileStore();
 
 // Destrukturyzacja z profileStore dla bezpiecznego ID i stanu gotowości
 const { verifiedActiveProfileId } = storeToRefs(profileStore);
-const { expenses, isLoading, filteredtotalExpenses, totals } = storeToRefs(expenseStore);
+const { expenses, isLoading, filteredTotalExpenses, totals } = storeToRefs(expenseStore);
 
 // Używamy zweryfikowanego ID profilu
 const currentProfileId = computed(() => verifiedActiveProfileId.value);
@@ -305,7 +305,7 @@ const confirmDelete = async (
     <p class="expense-summary-box">
       Łączna kwota wydatków:
       <span class="expense-summary-amount"
-        >{{ parseFloat(filteredtotalExpenses).toFixed(2) }} zł</span
+        >{{ parseFloat(filteredTotalExpenses).toFixed(2) }} zł</span
       >
     </p>
     <div v-if="isLoading" class="text-center p-8 text-gray-500">Ładowanie danych wydatków...</div>

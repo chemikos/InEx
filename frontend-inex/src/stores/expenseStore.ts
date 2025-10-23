@@ -76,7 +76,7 @@ export const useExpenseStore = defineStore('expense', () => {
 
   // --- GETTERS (Computed) ---
 
-  const filteredtotalExpenses = computed(() => {
+  const filteredTotalExpenses = computed(() => {
     // Obliczanie sumy wydatków
     return expenses.value.reduce((sum, expense) => sum + expense.amount, 0).toFixed(2);
   });
@@ -245,7 +245,7 @@ export const useExpenseStore = defineStore('expense', () => {
     activeExpenses, // Nowy bezpieczny getter
     isLoading,
     totals,
-    filteredtotalExpenses,
+    filteredTotalExpenses,
     fetchExpenses,
     addExpense,
     updateExpense,

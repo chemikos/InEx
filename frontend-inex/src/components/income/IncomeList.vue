@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'; // Usunięto podwójny import
 import { storeToRefs } from 'pinia';
-import { useIncomeStore, type Income } from '@/stores/incomeStore';
+import {
+  useIncomeStore,
+  type Income,
+  type IncomeFilterParams,
+  // type IncomeTotals,
+  // type IncomeAggregated,
+} from '@/stores/incomeStore';
 import { useProfileStore } from '@/stores/profileStore';
 
 const incomeStore = useIncomeStore();
@@ -12,10 +18,89 @@ const profileStore = useProfileStore();
 const { verifiedActiveProfileId } = storeToRefs(profileStore);
 
 // 2. Wypakowujemy stan z IncomeStore
-const { incomes, isLoading, totalIncomes } = storeToRefs(incomeStore);
+const { incomes, isLoading, filteredTotalIncomes, totals, aggregated } = storeToRefs(incomeStore);
 
 // Używamy zweryfikowanego ID profilu
 const currentProfileId = computed(() => verifiedActiveProfileId.value);
+
+// --- POMOCNICY DATY ---
+/**
+ * Zwraca datę w formacie YYYY-MM-DD.
+ * Jeśli `isStart` jest true, zwraca pierwszy dzień miesiąca, w przeciwnym razie ostatni.
+ */
+const getDefaultDateForCurrentMonth = (isStart: boolean): string => {
+  const now = new Date();
+  let dateToSet: Date;
+
+  if (isStart) {
+    // Pierwszy dzień miesiąca (np. 2025-10-01)
+    dateToSet = new Date(now.getFullYear(), now.getMonth(), 1);
+  } else {
+    // Ostatni dzień miesiąca (np. 2025-10-31)
+    dateToSet = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  }
+  const year = dateToSet.getFullYear();
+  const month = String(dateToSet.getMonth() + 1).padStart(2, '0');
+  const day = String(dateToSet.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+
+  // // Formatowanie do YYYY-MM-DD, wymagane przez input type="date"
+  // return dateToSet.toISOString().split('T')[0] || '';
+};
+
+// --- STAN FILTROWANIA DAT ---
+// Domyślnie ustawiony jest bieżący miesiąc i jest aktywny, zgodnie z prośbą
+const dateFrom = ref<string | null>(getDefaultDateForCurrentMonth(true));
+const dateTo = ref<string | null>(getDefaultDateForCurrentMonth(false));
+const isDateFromActive = ref(true);
+const isDateToActive = ref(true);
+
+/**
+ * Uruchamia pobieranie wydatków z uwzględnieniem aktywnych filtrów dat.
+ */
+const applyFilter = async () => {
+  // Czyścimy komunikaty przed rozpoczęciem operacji
+  message.value = { text: '', type: null };
+  const profileId = currentProfileId.value;
+
+  if (profileId === null) {
+    return;
+  }
+
+  // Określenie, które daty wysłać do backendu
+  const start = isDateFromActive.value && dateFrom.value ? dateFrom.value : null;
+  const end = isDateToActive.value && dateTo.value ? dateTo.value : null;
+
+  // Walidacja zakresu dat
+  if (start && end && start > end) {
+    message.value = {
+      text: 'Data początkowa nie może być późniejsza niż data końcowa.',
+      type: 'error',
+    };
+    return;
+  }
+
+  try {
+    const filters: IncomeFilterParams = {
+      dateFrom: start,
+      dateTo: end,
+    };
+    await incomeStore.fetchIncomes(profileId, filters);
+  } catch (error) {
+    message.value = { text: (error as Error).message, type: 'error' };
+  }
+};
+
+/**
+ * Resetuje daty filtrowania do bieżącego miesiąca i odświeża listę.
+ */
+const resetFilter = () => {
+  dateFrom.value = getDefaultDateForCurrentMonth(true);
+  dateTo.value = getDefaultDateForCurrentMonth(false);
+  isDateFromActive.value = true;
+  isDateToActive.value = true;
+  applyFilter();
+};
 
 // --- REAKTYWNE ŁADOWANIE DANYCH ---
 // Obserwujemy zmianę aktywnego ID profilu i wywołujemy fetchIncomes
@@ -162,7 +247,81 @@ const confirmDelete = async (incomeId: number, amount: number, profileId: number
 
 <template>
   <div class="table-container income-list-container padding-left padding-right">
+    <h3 class="form-title expense-title-border">Wszystkie Wpłaty</h3>
+    <p class="expense-summary-box">
+      <span>
+        Wszystkie wpłaty:
+        <span class="expense-summary-amount"> {{ totals.AllTimeIncomes }} zł</span>
+      </span>
+      <span>
+        Wpłaty w tym roku:
+        <span class="expense-summary-amount">{{ totals.CurrentYearIncomes }} zł</span>
+      </span>
+      <span>
+        Wpłaty w tym miesiącu:
+        <span class="expense-summary-amount">{{ totals.CurrentMonthIncomes }} zł</span>
+      </span>
+    </p>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th class="table-header">Źródło</th>
+          <th class="table-header">Kwota łączna</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="agg in aggregated" :key="agg.source_name" class="table-row income-row-hover">
+          <td class="table-cell">{{ agg.source_name }}</td>
+          <td class="table-cell income-amount-cell">{{ agg.total.toFixed(2) }} PLN</td>
+        </tr>
+      </tbody>
+    </table>
+
     <h3 class="form-title income-title-border">Ostatnie Wpłaty</h3>
+
+    <div class="filter-panel">
+      <div class="inline">
+        <div class="filter-group">
+          <div class="inline">
+            <input type="checkbox" id="checkStart" v-model="isDateFromActive" />
+            <label for="checkStart" class="form-label">Od daty:</label>
+          </div>
+          <input
+            type="date"
+            id="dateFrom"
+            v-model="dateFrom"
+            :disabled="!isDateFromActive"
+            class="form-input"
+            :class="{ 'opacity-50 bg-gray-100': !isDateFromActive }"
+          />
+        </div>
+        <div class="filter-group">
+          <div class="inline">
+            <input type="checkbox" id="checkEnd" v-model="isDateToActive" />
+            <label for="checkEnd" class="form-label">Do daty:</label>
+          </div>
+          <input
+            type="date"
+            id="dateTo"
+            v-model="dateTo"
+            :disabled="!isDateToActive"
+            class="form-input"
+            :class="{ 'opacity-50 bg-gray-100': !isDateToActive }"
+          />
+        </div>
+      </div>
+      <div class="inline">
+        <button @click="applyFilter" :disabled="isLoading" class="btn-primary-small w-full">
+          <span v-if="isLoading">Filtrowanie...</span>
+          <span v-else>Filtruj</span>
+        </button>
+        <button @click="resetFilter" :disabled="isLoading" class="btn-secondary-small w-full">
+          Reset
+        </button>
+      </div>
+    </div>
+
     <div
       v-if="message.text"
       class="msg-box"
@@ -175,7 +334,9 @@ const confirmDelete = async (incomeId: number, amount: number, profileId: number
     </div>
     <p class="income-summary-box">
       Łączna kwota wpłat:
-      <span class="income-summary-amount">{{ parseFloat(totalIncomes).toFixed(2) }} zł</span>
+      <span class="income-summary-amount"
+        >{{ parseFloat(filteredTotalIncomes).toFixed(2) }} zł</span
+      >
     </p>
     <div v-if="isLoading" class="text-center p-8 text-gray-500">Ładowanie danych wpłat...</div>
     <div v-else-if="incomes.length > 0" class="overflow-x-auto">
