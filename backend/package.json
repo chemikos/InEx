@@ -1,14 +1,16 @@
 {
-  "name": "finapp",
+  "name": "inex-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Backend aplikacji InEx – rejestr wydatków i inwestycji",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "lint": "eslint ."
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "chemikos",
+  "license": "MIT",
   "type": "commonjs",
   "devDependencies": {
     "eslint": "^9.35.0",
@@ -18,7 +20,10 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^5.1.0",
+    "dotenv": "^17.2.3",
+    "express": "^4.18.2",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.1",
     "sqlite3": "^5.1.7"
   }
 }

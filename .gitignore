@@ -2,9 +2,7 @@
 ## Backend
 backend/node_modules/
 backend/db/
-
-backend/.eslintrc.json
-backend/.prettierrc.json
+.env
 
 
 ## Front
