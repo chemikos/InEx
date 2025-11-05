@@ -65,7 +65,7 @@ router.post('/', async (req, res) => {
     validationParams,
     req.body.labelIds,
     'id',
-    'label',
+    'label'
   );
   for (const param of validationParams) {
     const message = getValidationError(param.value, param.field, param.type);
@@ -78,9 +78,7 @@ router.post('/', async (req, res) => {
     await db.runPromise('BEGIN TRANSACTION;');
     if (!(await checkProfileExists(profileId))) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(404)
-        .json({ message: 'Profil o podanym ID nie istnieje.' });
+      return res.status(404).json({ message: 'Profil o podanym ID nie istnieje.' });
     }
     if (!(await checkCategoryExists(categoryId, profileId))) {
       await db.runPromise('ROLLBACK;');
@@ -91,8 +89,7 @@ router.post('/', async (req, res) => {
     if (await checkItemNameExists(itemName, profileId, categoryId, null)) {
       await db.runPromise('ROLLBACK;');
       return res.status(409).json({
-        message:
-          'Pozycja o tej nazwie już istnieje w tej kategorii w tym profilu.',
+        message: 'Pozycja o tej nazwie już istnieje w tej kategorii w tym profilu.',
       });
     }
     if (labelIds.length > 0) {
@@ -106,26 +103,25 @@ router.post('/', async (req, res) => {
       }
     }
     let sql = 'INSERT OR IGNORE INTO items (name, fk_profile) VALUES (?, ?)';
-    await db.runPromise(sql, [itemName, profileId]);
-    sql = 'SELECT id_item FROM items WHERE name = ? AND fk_profile = ?';
-    const itemResult = await db.getPromise(sql, [itemName, profileId]);
-    const itemId = itemResult.id_item;
-    sql =
-      'INSERT OR IGNORE INTO item_category (fk_item, fk_category) VALUES (?, ?)';
-    const insertItemCategoryResult = await db.runPromise(sql, [
-      itemId,
-      categoryId,
-    ]);
+    const insertResult = await db.runPromise(sql, [itemName, profileId]);
+    const itemId = insertResult.lastID;
+    // const itemCategoryResult = await db.getPromise(
+    //   'SELECT * FROM item_category WHERE fk_item = ?',
+    //   [itemId]
+    // );
+    // if (itemCategoryResult) {
+    //   await db.runPromise('ROLLBACK;');
+    //   return res.status(409).json({ message: 'Ta pozycja już ma przypisaną kategorię.' });
+    // }
+    sql = 'INSERT OR IGNORE INTO item_category (fk_item, fk_category) VALUES (?, ?)';
+    const insertItemCategoryResult = await db.runPromise(sql, [itemId, categoryId]);
     if (insertItemCategoryResult.changes === 0) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(409)
-        .json({ message: 'Ta pozycja już ma przypisaną kategorię.' });
+      return res.status(409).json({ message: 'Ta pozycja już ma przypisaną kategorię.' });
     }
     if (labelIds.length > 0) {
       for (const labelId of labelIds) {
-        const insertLabelSQL =
-          'INSERT OR IGNORE INTO item_label (fk_item, fk_label) VALUES (?, ?)';
+        const insertLabelSQL = 'INSERT OR IGNORE INTO item_label (fk_item, fk_label) VALUES (?, ?)';
         await db.runPromise(insertLabelSQL, [itemId, labelId]);
       }
     }
@@ -152,19 +148,19 @@ router.get('/', async (req, res) => {
     validationParams,
     req.query.labelId,
     'id',
-    'label',
+    'label'
   );
   const categoryIds = getNormalizedValuesAndPushToParams(
     validationParams,
     req.query.categoryId,
     'id',
-    'category',
+    'category'
   );
   const itemIds = getNormalizedValuesAndPushToParams(
     validationParams,
     req.query.itemId,
     'id',
-    'item',
+    'item'
   );
   for (const param of validationParams) {
     const message = getValidationError(param.value, param.field, param.type);
@@ -175,9 +171,7 @@ router.get('/', async (req, res) => {
   const profileId = validationParams[0].value;
   try {
     if (!(await checkProfileExists(profileId))) {
-      return res
-        .status(404)
-        .json({ message: 'Profil o podanym ID nie istnieje.' });
+      return res.status(404).json({ message: 'Profil o podanym ID nie istnieje.' });
     }
     const params = [profileId];
     const whereClauses = [];
@@ -217,9 +211,7 @@ router.get('/', async (req, res) => {
         labels: item.labels ? item.labels.split(',') : [],
 
         // Konwersja stringa ID etykiet na tablicę liczb
-        label_ids: item.label_ids
-          ? item.label_ids.split(',').map((id) => parseInt(id))
-          : [],
+        label_ids: item.label_ids ? item.label_ids.split(',').map((id) => parseInt(id)) : [],
       };
     });
 
@@ -252,12 +244,9 @@ router.get('/:itemId', async (req, res) => {
   const itemId = req.params.itemId;
   try {
     if (!(await checkProfileExists(profileId))) {
-      return res
-        .status(404)
-        .json({ message: 'Profil o podanym ID nie istnieje.' });
+      return res.status(404).json({ message: 'Profil o podanym ID nie istnieje.' });
     }
-    const sql =
-      'SELECT id_item, name, fk_profile FROM items WHERE id_item = ? AND fk_profile = ?';
+    const sql = 'SELECT id_item, name, fk_profile FROM items WHERE id_item = ? AND fk_profile = ?';
     const resultItem = await db.getPromise(sql, [itemId, profileId]);
     return res.status(200).json({ message: resultItem });
   } catch (err) {
@@ -292,7 +281,7 @@ router.put('/:itemId', async (req, res) => {
     validationParams,
     req.body.labelIds,
     'id',
-    'label',
+    'label'
   );
   for (const param of validationParams) {
     const message = getValidationError(param.value, param.field, param.type);
@@ -306,9 +295,7 @@ router.put('/:itemId', async (req, res) => {
     await db.runPromise('BEGIN TRANSACTION;');
     if (!(await checkProfileExists(profileId))) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(404)
-        .json({ message: 'Profil o podanym ID nie istnieje.' });
+      return res.status(404).json({ message: 'Profil o podanym ID nie istnieje.' });
     }
     if (!(await checkCategoryExists(categoryId, profileId))) {
       await db.runPromise('ROLLBACK;');
@@ -318,9 +305,7 @@ router.put('/:itemId', async (req, res) => {
     }
     if (!(await checkItemExists(itemId, profileId))) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(404)
-        .json({ message: 'Pozycja o podamnym ID nie istnieje w tym profilu.' });
+      return res.status(404).json({ message: 'Pozycja o podamnym ID nie istnieje w tym profilu.' });
     }
     if (labelIds.length > 0) {
       for (const labelId of labelIds) {
@@ -335,27 +320,17 @@ router.put('/:itemId', async (req, res) => {
     if (await checkItemNameExists(itemName, profileId, categoryId, itemId)) {
       await db.runPromise('ROLLBACK;');
       return res.status(409).json({
-        message:
-          'Pozycja o tej nazwie już istnieje w tej kategorii w tym profilu.',
+        message: 'Pozycja o tej nazwie już istnieje w tej kategorii w tym profilu.',
       });
     }
     let sql = 'UPDATE items SET name = ? WHERE id_item = ? AND fk_profile = ?';
-    const updateNameResult = await db.runPromise(sql, [
-      itemName,
-      itemId,
-      profileId,
-    ]);
+    const updateNameResult = await db.runPromise(sql, [itemName, itemId, profileId]);
     if (updateNameResult.changes === 0) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(404)
-        .json({ message: 'Pozycja o podanym ID nie istnieje w tym profilu.' });
+      return res.status(404).json({ message: 'Pozycja o podanym ID nie istnieje w tym profilu.' });
     }
     sql = 'UPDATE item_category SET fk_category = ? WHERE fk_item = ?';
-    const updateItemCategoryResult = await db.runPromise(sql, [
-      categoryId,
-      profileId,
-    ]);
+    const updateItemCategoryResult = await db.runPromise(sql, [categoryId, profileId]);
     if (updateItemCategoryResult.changes === 0) {
       await db.runPromise('ROLLBACK;');
       return res.status(404).json({
@@ -405,12 +380,9 @@ router.delete('/:itemId', async (req, res) => {
     await db.runPromise('BEGIN TRANSACTION;');
     if (!(await checkProfileExists(profileId))) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(404)
-        .json({ message: 'Profil o podanym ID nie istnieje.' });
+      return res.status(404).json({ message: 'Profil o podanym ID nie istnieje.' });
     }
-    let sql =
-      'SELECT COUNT(*) AS count FROM expenses WHERE fk_item = ? AND fk_profile = ?';
+    let sql = 'SELECT COUNT(*) AS count FROM expenses WHERE fk_item = ? AND fk_profile = ?';
     const countResult = await db.getPromise(sql, [itemId, profileId]);
     if (countResult.count > 0) {
       await db.runPromise('ROLLBACK;');
@@ -426,9 +398,7 @@ router.delete('/:itemId', async (req, res) => {
     sql = 'DELETE FROM items WHERE id_item = ? AND fk_profile = ?';
     await db.runPromise(sql, [itemId, profileId]);
     await db.runPromise('COMMIT;');
-    return res
-      .status(200)
-      .json({ message: 'Pozycja i jej powiązania usunięte pomyślnie.' });
+    return res.status(200).json({ message: 'Pozycja i jej powiązania usunięte pomyślnie.' });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
     return res.status(500).json({ message: err.message });

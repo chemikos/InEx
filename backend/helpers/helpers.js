@@ -37,17 +37,16 @@ async function checkElementExists(elementId, elementType, profileId) {
 }
 
 async function checkProfileExists(profileId) {
-  const profileExists = await db.getPromise(
-    'SELECT * FROM profiles WHERE id_profile = ?',
-    [profileId],
-  );
+  const profileExists = await db.getPromise('SELECT * FROM profiles WHERE id_profile = ?', [
+    profileId,
+  ]);
   return !!profileExists;
 }
 
 async function checkItemExists(itemId, profileId) {
   const itemExists = await db.getPromise(
     'SELECT * FROM items WHERE id_item = ? AND fk_profile = ?',
-    [itemId, profileId],
+    [itemId, profileId]
   );
   return !!itemExists;
 }
@@ -55,7 +54,7 @@ async function checkItemExists(itemId, profileId) {
 async function checkCategoryExists(categoryId, profileId) {
   const categoryExists = await db.getPromise(
     'SELECT * FROM categories WHERE id_category = ? AND fk_profile = ?',
-    [categoryId, profileId],
+    [categoryId, profileId]
   );
   return !!categoryExists;
 }
@@ -63,7 +62,7 @@ async function checkCategoryExists(categoryId, profileId) {
 async function checkLabelExists(labelId, profileId) {
   const labelExists = await db.getPromise(
     'SELECT * FROM labels WHERE id_label = ? AND fk_profile = ?',
-    [labelId, profileId],
+    [labelId, profileId]
   );
   return !!labelExists;
 }
@@ -71,7 +70,7 @@ async function checkLabelExists(labelId, profileId) {
 async function checkExpenseExists(expenseId, profileId) {
   const expenseExists = await db.getPromise(
     'SELECT * FROM expenses WHERE id_expense = ? AND fk_profile = ?',
-    [expenseId, profileId],
+    [expenseId, profileId]
   );
   return !!expenseExists;
 }
@@ -79,7 +78,7 @@ async function checkExpenseExists(expenseId, profileId) {
 async function checkSourceExists(sourceId, profileId) {
   const sourceExists = await db.getPromise(
     'SELECT * FROM sources WHERE id_source = ? AND fk_profile = ?',
-    [sourceId, profileId],
+    [sourceId, profileId]
   );
   return !!sourceExists;
 }
@@ -87,7 +86,7 @@ async function checkSourceExists(sourceId, profileId) {
 async function checkIncomeExists(incomeId, profileId) {
   const incomeExists = await db.getPromise(
     'SELECT * FROM incomes WHERE id_income = ? AND fk_profile = ?',
-    [incomeId, profileId],
+    [incomeId, profileId]
   );
   return !!incomeExists;
 }
@@ -97,12 +96,12 @@ async function checkCategoryNameExists(categoryName, profileId, categoryId) {
   if (categoryId) {
     categoryNameExists = await db.getPromise(
       'SELECT * FROM categories WHERE name = ? AND fk_profile = ? AND id_category != ?',
-      [categoryName, profileId, categoryId],
+      [categoryName, profileId, categoryId]
     );
   } else {
     categoryNameExists = await db.getPromise(
       'SELECT * FROM categories WHERE name = ? AND fk_profile = ?',
-      [categoryName, profileId],
+      [categoryName, profileId]
     );
   }
   return !!categoryNameExists;
@@ -115,17 +114,17 @@ async function checkItemNameExists(itemName, profileId, categoryId, itemId) {
       `SELECT * FROM items i
       JOIN item_category ic ON ic.fk_item = i.id_item
       WHERE i.name = ? AND i.fk_profile = ? AND i.id_item != ? AND ic.fk_category = ?`,
-      [itemName, profileId, itemId, categoryId],
+      [itemName, profileId, itemId, categoryId]
     );
   } else {
     itemNameExists = await db.getPromise(
       `SELECT * FROM items i
       JOIN item_category ic ON ic.fk_item = i.id_item
       WHERE i.name = ? AND i.fk_profile = ? AND ic.fk_category = ?`,
-      [itemName, profileId, categoryId],
+      [itemName, profileId, categoryId]
     );
-    return !!itemNameExists;
   }
+  return !!itemNameExists;
 }
 
 async function checkLabelNameExists(labelName, profileId, labelId) {
@@ -133,12 +132,12 @@ async function checkLabelNameExists(labelName, profileId, labelId) {
   if (labelId) {
     labelNameExists = await db.getPromise(
       'SELECT * FROM labels WHERE name = ? AND fk_profile = ? AND id_label != ?',
-      [labelName, profileId, labelId],
+      [labelName, profileId, labelId]
     );
   } else {
     labelNameExists = await db.getPromise(
       'SELECT * FROM labels WHERE name = ? AND fk_profile = ?',
-      [labelName, profileId],
+      [labelName, profileId]
     );
   }
   return !!labelNameExists;
@@ -149,13 +148,10 @@ async function checkProfileNameExists(profileName, profileId) {
   if (profileId) {
     profileNameExists = await db.getPromise(
       'SELECT * FROM profiles WHERE name = ? AND id_profile != ?',
-      [profileName, profileId],
+      [profileName, profileId]
     );
   } else {
-    profileNameExists = await db.getPromise(
-      'SELECT * FROM profiles WHERE name = ?',
-      [profileName],
-    );
+    profileNameExists = await db.getPromise('SELECT * FROM profiles WHERE name = ?', [profileName]);
   }
   return !!profileNameExists;
 }
@@ -165,12 +161,12 @@ async function checkSourceNameExists(sourceName, profileId, sourceId) {
   if (sourceId) {
     sourceNameExists = await db.getPromise(
       'SELECT * FROM sources WHERE name = ? AND fk_profile = ? AND id_source != ?',
-      [sourceName, profileId, sourceId],
+      [sourceName, profileId, sourceId]
     );
   } else {
     sourceNameExists = await db.getPromise(
       'SELECT * FROM sources WHERE name = ? AND fk_profile = ?',
-      [sourceName, profileId],
+      [sourceName, profileId]
     );
   }
   return !!sourceNameExists;
@@ -179,10 +175,7 @@ async function checkSourceNameExists(sourceName, profileId, sourceId) {
 function validateId(id) {
   const parsedId = Number(id);
   return (
-    typeof parsedId === 'number' &&
-    !isNaN(parsedId) &&
-    Number.isInteger(parsedId) &&
-    parsedId > 0
+    typeof parsedId === 'number' && !isNaN(parsedId) && Number.isInteger(parsedId) && parsedId > 0
   );
 }
 
@@ -192,11 +185,7 @@ function validateName(name) {
 
 function validateAmount(amount) {
   const parsedAmount = Number(amount);
-  if (
-    typeof parsedAmount !== 'number' ||
-    isNaN(parsedAmount) ||
-    parsedAmount < 0
-  ) {
+  if (typeof parsedAmount !== 'number' || isNaN(parsedAmount) || parsedAmount < 0) {
     return false;
   }
   const multipliedAndRounded = Math.round(parsedAmount * 100);
@@ -213,11 +202,7 @@ function validateDate(date) {
   const month = parseInt(parts[1], 10);
   const day = parseInt(parts[2], 10);
   const d = new Date(year, month - 1, day);
-  if (
-    d.getFullYear() !== year ||
-    d.getMonth() + 1 !== month ||
-    d.getDate() !== day
-  ) {
+  if (d.getFullYear() !== year || d.getMonth() + 1 !== month || d.getDate() !== day) {
     return false;
   }
   // const today = new Date();
@@ -295,7 +280,7 @@ function getErrorIfNameInvalid(name, name_type) {
 }
 
 function getErrorIfAmountInvalid(amount) {
-  if (!amount) {
+  if (amount == null || amount === '') {
     return 'Kwota jest wymagana.';
   }
   if (!validateAmount(amount)) {
