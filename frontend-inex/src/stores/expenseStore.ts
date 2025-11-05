@@ -135,7 +135,7 @@ export const useExpenseStore = defineStore('expense', () => {
    * Dodaje nowy wydatek (POST).
    */
   async function addExpense(expenseData: NewExpenseData) {
-    if (!expenseData.amount || !expenseData.date || !expenseData.itemId) {
+    if (expenseData.amount == null || !expenseData.date || !expenseData.itemId) {
       throw new Error('Kwota, data i pozycja wydatku są wymagane.');
     } // Zabezpieczenie: Tylko dla aktywnego, zweryfikowanego profilu
     const currentActiveId = verifiedActiveProfileId.value;

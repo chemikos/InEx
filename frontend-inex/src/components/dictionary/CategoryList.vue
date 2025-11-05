@@ -133,6 +133,18 @@ const confirmDelete = async (categoryId: number, categoryName: string, profileId
     message.value = { text: (error as Error).message, type: 'error' };
   }
 };
+
+const expandedCategories = ref<number[]>([]);
+const toggleItems = (categoryId: number) => {
+  const index = expandedCategories.value.indexOf(categoryId);
+  if (index === -1) {
+    // jeśli nie ma tego ID → dodaj
+    expandedCategories.value.push(categoryId);
+  } else {
+    // jeśli już jest → usuń
+    expandedCategories.value.splice(index, 1);
+  }
+};
 </script>
 
 <template>
@@ -168,45 +180,65 @@ const confirmDelete = async (categoryId: number, categoryName: string, profileId
         </thead>
         <tbody>
           <!-- ZMIANA 7: Iterujemy po activeCategories -->
-          <tr v-for="category in activeCategories" :key="category.id_category" class="table-row">
-            <td class="table-cell">
-              <template v-if="editingCategoryId === category.id_category">
-                <input
-                  type="text"
-                  v-model="tempCategoryName"
-                  @keyup.enter="saveEdit(category.id_category, category.fk_profile)"
-                  class="form-input"
-                  style="width: 90%; padding: 0.3rem"
-                />
-              </template>
-              <template v-else> {{ category.name }} </template>
-            </td>
-            <td class="table-cell actions-cell">
-              <template v-if="editingCategoryId === category.id_category">
-                <button
-                  @click="saveEdit(category.id_category, category.fk_profile)"
-                  class="btn-action btn-edit-save mr-2"
-                >
-                  Zapisz
-                </button>
-                <button @click="cancelEdit" class="btn-action btn-secondary-small">Anuluj</button>
-              </template>
-              <template v-else>
-                <button
-                  @click="startEdit(category.id_category, category.name)"
-                  class="btn-action btn-edit mr-2"
-                >
-                  Edytuj
-                </button>
-                <button
-                  @click="confirmDelete(category.id_category, category.name, category.fk_profile)"
-                  class="btn-action btn-delete"
-                >
-                  Usuń
-                </button>
-              </template>
-            </td>
-          </tr>
+          <!-- <tr v-for="category in activeCategories" :key="category.id_category" class="table-row"> -->
+          <!-- ✅ v-for jest tylko na <template>, nie na <tr> -->
+          <template v-for="category in activeCategories" :key="category.id_category">
+            <!-- Wiersz z nazwą kategorii -->
+            <tr class="table-row">
+              <td
+                class="table-cell"
+                @click="toggleItems(category.id_category)"
+                style="cursor: pointer"
+              >
+                <template v-if="editingCategoryId === category.id_category">
+                  <input
+                    type="text"
+                    v-model="tempCategoryName"
+                    @keyup.enter="saveEdit(category.id_category, category.fk_profile)"
+                    class="form-input"
+                    style="width: 90%; padding: 0.3rem"
+                  />
+                </template>
+                <template v-else> {{ category.name }} </template>
+              </td>
+              <td class="table-cell actions-cell">
+                <template v-if="editingCategoryId === category.id_category">
+                  <button
+                    @click="saveEdit(category.id_category, category.fk_profile)"
+                    class="btn-action btn-edit-save mr-2"
+                  >
+                    Zapisz
+                  </button>
+                  <button @click="cancelEdit" class="btn-action btn-secondary-small">Anuluj</button>
+                </template>
+                <template v-else>
+                  <button
+                    @click="startEdit(category.id_category, category.name)"
+                    class="btn-action btn-edit mr-2"
+                  >
+                    Edytuj
+                  </button>
+                  <button
+                    @click="confirmDelete(category.id_category, category.name, category.fk_profile)"
+                    class="btn-action btn-delete"
+                  >
+                    Usuń
+                  </button>
+                </template>
+              </td>
+            </tr>
+            <!-- Wiersz rozwijany z elementami -->
+            <tr v-if="expandedCategories.includes(category.id_category)">
+              <td colspan="2" class="table-cell-items">
+                <ul v-if="category.items">
+                  <li v-for="(item, index) in category.items" :key="index">
+                    {{ item.trim() }}
+                  </li>
+                </ul>
+                <p v-else>Brak przypisanych elementów</p>
+              </td>
+            </tr>
+          </template>
         </tbody>
       </table>
     </div>

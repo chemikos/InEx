@@ -8,7 +8,10 @@ export interface Category {
   id_category: number;
   name: string;
   fk_profile: number;
+  items: string[];
+  item_ids: number[];
 }
+
 export interface NewCategoryData {
   categoryName: string;
   profileId: number;
@@ -56,10 +59,12 @@ export const useCategoryStore = defineStore('category', () => {
       categories.value = [];
       return;
     }
+    // console.log('categories.value fetch: ' + categories.value.length); //do wyrzucenia
     isLoading.value = true;
     try {
       const response = await http.get<Category[]>(`/categories?profileId=${profileId}`);
-      categories.value = response.data;
+      categories.value = response.data.data;
+      // console.log('categories.value fetch try: ' + categories.value.length);  //do wyrzucenia
     } catch (error) {
       console.error(`Błąd podczas pobierania kategorii dla profilu ${profileId}:`, error);
       categories.value = [];
@@ -86,6 +91,8 @@ export const useCategoryStore = defineStore('category', () => {
         id_category: data.categoryId, // Zakładamy, że backend zwraca ID
         name: categoryData.categoryName,
         fk_profile: categoryData.profileId,
+        items: [],
+        item_ids: [],
       }; // Dodajemy nową kategorię do lokalnego stanu (tylko jeśli jest dla aktywnego profilu)
       categories.value.push(newCategory);
       return { category: newCategory, message: data.message };

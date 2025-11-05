@@ -38,7 +38,7 @@ const isFormDisabled = computed(() => {
 const handleSubmit = async () => {
   // Sprawdzanie podstawowej walidacji
   if (
-    !newExpenseAmount.value ||
+    newExpenseAmount.value == null ||
     !newExpenseDate.value ||
     !selectedItemId.value ||
     !activeProfileId.value
