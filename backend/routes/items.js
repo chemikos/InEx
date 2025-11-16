@@ -330,7 +330,7 @@ router.put('/:itemId', async (req, res) => {
       return res.status(404).json({ message: 'Pozycja o podanym ID nie istnieje w tym profilu.' });
     }
     sql = 'UPDATE item_category SET fk_category = ? WHERE fk_item = ?';
-    const updateItemCategoryResult = await db.runPromise(sql, [categoryId, profileId]);
+    const updateItemCategoryResult = await db.runPromise(sql, [categoryId, itemId]);
     if (updateItemCategoryResult.changes === 0) {
       await db.runPromise('ROLLBACK;');
       return res.status(404).json({
