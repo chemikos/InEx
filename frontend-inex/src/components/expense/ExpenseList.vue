@@ -8,44 +8,42 @@ import {
   // type ExpenseTotals,
 } from '@/stores/expenseStore'; // Importujemy ExpenseFilterParams
 import { useProfileStore } from '@/stores/profileStore';
+import { useItemStore } from '@/stores/itemStore';
 
 const expenseStore = useExpenseStore();
 const profileStore = useProfileStore();
+const itemStore = useItemStore();
 
 // Destrukturyzacja z profileStore dla bezpiecznego ID i stanu gotowości
 const { verifiedActiveProfileId } = storeToRefs(profileStore);
 const { expenses, isLoading, filteredTotalExpenses, totals } = storeToRefs(expenseStore);
+const { items } = storeToRefs(itemStore);
 
-// Używamy zweryfikowanego ID profilu
 const currentProfileId = computed(() => verifiedActiveProfileId.value);
 
+// --- STAN FILTROWANIA ---
+// Używamy ref dla listy wybranych ID Pozycji
+const selectedItemIds = ref<number[]>([]);
+// Pole do przechowywania wszystkich dostępnych pozycji. Pobierane z ItemStore.
+const availableItems = computed(() => items.value);
+
 // --- POMOCNICY DATY ---
-/**
- * Zwraca datę w formacie YYYY-MM-DD.
- * Jeśli `isStart` jest true, zwraca pierwszy dzień miesiąca, w przeciwnym razie ostatni.
- */
 const getDefaultDateForCurrentMonth = (isStart: boolean): string => {
   const now = new Date();
   let dateToSet: Date;
 
   if (isStart) {
-    // Pierwszy dzień miesiąca (np. 2025-10-01)
     dateToSet = new Date(now.getFullYear(), now.getMonth(), 1);
   } else {
-    // Ostatni dzień miesiąca (np. 2025-10-31)
     dateToSet = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   }
   const year = dateToSet.getFullYear();
   const month = String(dateToSet.getMonth() + 1).padStart(2, '0');
   const day = String(dateToSet.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-
-  // // Formatowanie do YYYY-MM-DD, wymagane przez input type="date"
-  // return dateToSet.toISOString().split('T')[0] || '';
 };
 
 // --- STAN FILTROWANIA DAT ---
-// Domyślnie ustawiony jest bieżący miesiąc i jest aktywny, zgodnie z prośbą
 const dateFrom = ref<string | null>(getDefaultDateForCurrentMonth(true));
 const dateTo = ref<string | null>(getDefaultDateForCurrentMonth(false));
 const isDateFromActive = ref(true);
@@ -55,7 +53,6 @@ const isDateToActive = ref(true);
  * Uruchamia pobieranie wydatków z uwzględnieniem aktywnych filtrów dat.
  */
 const applyFilter = async () => {
-  // Czyścimy komunikaty przed rozpoczęciem operacji
   message.value = { text: '', type: null };
   const profileId = currentProfileId.value;
 
@@ -80,6 +77,8 @@ const applyFilter = async () => {
     const filters: ExpenseFilterParams = {
       dateFrom: start,
       dateTo: end,
+      // WAŻNA ZMIANA: Używamy selectedItemIds, które przechowuje już listę numerów
+      itemIds: selectedItemIds.value.length > 0 ? selectedItemIds.value : undefined,
     };
     await expenseStore.fetchExpenses(profileId, filters);
   } catch (error) {
@@ -95,19 +94,28 @@ const resetFilter = () => {
   dateTo.value = getDefaultDateForCurrentMonth(false);
   isDateFromActive.value = true;
   isDateToActive.value = true;
+  selectedItemIds.value = []; // Resetowanie filtra Pozycji
   applyFilter();
 };
 
-// Ładowanie wydatków przy zmianie aktywnego profilu (wywołuje applyFilter)
+// --- ŁADOWANIE DANYCH PO ZMIANIE PROFILU ---
+
+// Ładowanie wydatków I pozycji przy zmianie aktywnego profilu (lub pierwszym załadowaniu)
 watch(
   currentProfileId,
   (newId) => {
-    // Upewniamy się, że profil jest gotowy i ID jest poprawne
     if (newId !== null && newId !== 0) {
       // Po zmianie profilu lub pierwszym załadowaniu aplikujemy domyślny filtr
       resetFilter();
+
+      // 2. Załadowanie listy Pozycji do filtra
+      itemStore.fetchItems(newId).catch((error) => {
+        console.error('Błąd podczas ładowania pozycji do filtra:', error);
+        message.value = { text: 'Nie udało się załadować pozycji do filtra.', type: 'error' };
+      });
     } else {
       expenseStore.expenses = [];
+      itemStore.items = [];
     }
   },
   {
@@ -120,7 +128,6 @@ const editingExpenseId = ref<number | null>(null);
 const tempAmount = ref<number | null>(null);
 const tempDate = ref('');
 
-// --- KOMUNIKATY ZWROTNE ---
 const message = ref<{ text: string; type: 'success' | 'error' | null }>({ text: '', type: null });
 
 const showConfirmModal = (message: string) => {
@@ -280,6 +287,28 @@ const confirmDelete = async (
             class="form-input"
             :class="{ 'opacity-50 bg-gray-100': !isDateToActive }"
           />
+        </div>
+      </div>
+      <div class="filter-group">
+        <div class="inline">
+          <label for="itemFilter" class="form-label">Filtr po Pozycji:</label>
+          <select
+            id="itemFilter"
+            v-model="selectedItemIds"
+            multiple
+            class="form-input custom-select-multi"
+            :disabled="availableItems.length === 0"
+          >
+            <!-- <option v-if="availableItems.length === 0" disabled value="">
+              Ładowanie pozycji...
+            </option>
+            <option v-else-if="availableItems.length === 0" disabled value="">
+              Brak dostępnych pozycji
+            </option> -->
+            <option v-for="item in availableItems" :key="item.id_item" :value="item.id_item">
+              {{ item.name }} ({{ item.id_item }})
+            </option>
+          </select>
         </div>
       </div>
       <div class="inline">

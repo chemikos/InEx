@@ -44,6 +44,7 @@ export interface ExpenseTotals {
 export interface ExpenseFilterParams {
   dateFrom?: string | null;
   dateTo?: string | null;
+  itemIds?: number[] | null;
 }
 
 // --- HELPER FUNKCJA DO OBSŁUGI BŁĘDÓW ---
@@ -114,6 +115,9 @@ export const useExpenseStore = defineStore('expense', () => {
       if (filters.dateTo) {
         params.append('dateTo', filters.dateTo);
       }
+      if (filters.itemIds && filters.itemIds.length > 0) {
+        filters.itemIds.forEach((id) => params.append('itemId', id.toString()));
+      }
 
       const url = `/expenses?${params.toString()}`;
 
@@ -122,7 +126,7 @@ export const useExpenseStore = defineStore('expense', () => {
       totals.value.AllTimeExpenses = response.data.totals.AllTime;
       totals.value.CurrentYearExpenses = response.data.totals.CurrentYear;
       totals.value.CurrentMonthExpenses = response.data.totals.CurrentMonth;
-      console.log('toatal: ' + totals.value.AllTimeExpenses);
+      console.log('total: ' + totals.value.AllTimeExpenses);
     } catch (error) {
       console.error(`Błąd podczas pobierania wydatków dla profilu ${profileId}:`, error);
       expenses.value = [];
