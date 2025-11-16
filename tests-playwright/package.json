@@ -1,0 +1,23 @@
+{
+  "name": "tests-playwright",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test:api": "npx playwright test tests-playwright/tests/api",
+    "test:api:4000": "cross-env BASE_URL=http://localhost:4000/api playwright test tests-playwright",
+    "test:api:test": "cross-env BASE_URL=https://inex-api.test/api playwright test tests-playwright",
+    "test:api:prod": "cross-env BASE_URL=https://inex.app/api playwright test tests-playwright",
+    "test:report": "playwright show-report"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^24.10.0",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.2.3"
+  }
+}
