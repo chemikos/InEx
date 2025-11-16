@@ -343,10 +343,21 @@ function getNormalizedValue(rawValue) {
 }
 
 function getNormalizedValuesAndPushToParams(params, values, field, type) {
-  const normalizedValues = [...new Set(values || [])];
+  let valuesAsArray = Array.isArray(values) ? values : [values];
+  if (
+    valuesAsArray.length === 1 &&
+    (valuesAsArray[0] === null ||
+      typeof valuesAsArray[0] === 'undefined' ||
+      valuesAsArray[0] === '')
+  ) {
+    valuesAsArray = [];
+  }
+  const normalizedValues = [...new Set(valuesAsArray)];
   if (normalizedValues.length > 0) {
     for (const value of normalizedValues) {
-      params.push({ value: value, field: field, type: type });
+      if (String(value).trim() !== '') {
+        params.push({ value: value, field: field, type: type });
+      }
     }
   }
   return normalizedValues;
