@@ -72,7 +72,8 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message });
     }
   }
-  const { profileId, itemId, amount, date } = req.body;
+  const { profileId, itemId, date } = req.body;
+  const amount = parseAmountToCents(req.body.amount);
   try {
     await db.runPromise('BEGIN TRANSACTION;');
     if (!(await checkProfileExists(profileId))) {
@@ -245,35 +246,35 @@ router.get('/', async (req, res) => {
     });
 
     const totalExpenseAllTimeResult = await db.getPromise(
-      `SELECT ROUND(SUM(amount), 2) AS total FROM expenses WHERE fk_profile = ?;`,
+      `SELECT SUM(amount) AS total FROM expenses WHERE fk_profile = ?;`,
       [profileId]
     );
     const totalExpenseAllTime = totalExpenseAllTimeResult?.total || 0;
     const totalExpenseCurrentYearResult = await db.getPromise(
-      `SELECT ROUND(SUM(amount), 2) AS total FROM expenses WHERE fk_profile = ? AND strftime('%Y', date) = strftime('%Y', 'now');`,
+      `SELECT SUM(amount) AS total FROM expenses WHERE fk_profile = ? AND strftime('%Y', date) = strftime('%Y', 'now');`,
       [profileId]
     );
     const totalExpenseCurrentYear = totalExpenseCurrentYearResult?.total || 0;
     const totalExpenseCurrentMonthResult = await db.getPromise(
-      `SELECT ROUND(SUM(amount), 2) AS total FROM expenses WHERE fk_profile = ? AND strftime('%Y-%m', date) = strftime('%Y-%m', 'now');`,
+      `SELECT SUM(amount) AS total FROM expenses WHERE fk_profile = ? AND strftime('%Y-%m', date) = strftime('%Y-%m', 'now');`,
       [profileId]
     );
     const totalExpenseCurrentMonth = totalExpenseCurrentMonthResult?.total || 0;
 
     const totalIncomeAllTimeResult = await db.getPromise(
-      `SELECT ROUND(SUM(amount), 2) AS total FROM incomes WHERE fk_profile = ?;`,
+      `SELECT SUM(amount) AS total FROM incomes WHERE fk_profile = ?;`,
       [profileId]
     );
     const totalIncomeAllTime = totalIncomeAllTimeResult?.total || 0;
 
     const totalIncomeCurrentYearResult = await db.getPromise(
-      `SELECT ROUND(SUM(amount), 2) AS total FROM incomes WHERE fk_profile = ? AND strftime('%Y', date) = strftime('%Y', 'now');`,
+      `SELECT SUM(amount) AS total FROM incomes WHERE fk_profile = ? AND strftime('%Y', date) = strftime('%Y', 'now');`,
       [profileId]
     );
     const totalIncomeCurrentYear = totalIncomeCurrentYearResult?.total || 0;
 
     const totalIncomeCurrentMonthResult = await db.getPromise(
-      `SELECT ROUND(SUM(amount), 2) AS total FROM incomes WHERE fk_profile = ? AND strftime('%Y-%m', date) = strftime('%Y-%m', 'now');`,
+      `SELECT SUM(amount) AS total FROM incomes WHERE fk_profile = ? AND strftime('%Y-%m', date) = strftime('%Y-%m', 'now');`,
       [profileId]
     );
     const totalIncomeCurrentMonth = totalIncomeCurrentMonthResult?.total || 0;
@@ -296,7 +297,7 @@ router.get('/', async (req, res) => {
     // };
 
     const aggregatedExpense = await db.allPromise(
-      `SELECT i.name AS item_name, c.name AS category_name, ROUND(SUM(e.amount), 2) AS total
+      `SELECT i.name AS item_name, c.name AS category_name, SUM(e.amount) AS total
       FROM expenses e
       JOIN items i ON e.fk_item = i.id_item
       JOIN item_category ic ON i.id_item = ic.fk_item
@@ -308,7 +309,7 @@ router.get('/', async (req, res) => {
     );
 
     const aggregatedExpenseByLabel = await db.allPromise(
-      `SELECT l.name AS label_name, ROUND(SUM(e.amount), 2) AS total
+      `SELECT l.name AS label_name, SUM(e.amount) AS total
       FROM expenses e
       JOIN items i ON e.fk_item = i.id_item
       LEFT JOIN item_label il ON i.id_item = il.fk_item
@@ -440,7 +441,8 @@ router.put('/:expenseId', async (req, res) => {
       return res.status(400).json({ message });
     }
   }
-  const { profileId, itemId, amount, date } = req.body;
+  const { profileId, itemId, date } = req.body;
+  const amount = parseAmountToCents(req.body.amount);
   const expenseId = req.params.expenseId;
   try {
     await db.runPromise('BEGIN TRANSACTION;');

@@ -58,7 +58,7 @@ const tableQueries = [
   `CREATE TABLE IF NOT EXISTS expenses (
     id_expense INTEGER PRIMARY KEY AUTOINCREMENT,
     fk_item INTEGER,
-    amount REAL NOT NULL,
+    amount INTEGER NOT NULL,
     date TEXT NOT NULL,
     fk_profile INTEGER,
     FOREIGN KEY (fk_item) REFERENCES items(id_item),
@@ -88,7 +88,7 @@ const tableQueries = [
   `CREATE TABLE IF NOT EXISTS incomes (
     id_income INTEGER PRIMARY KEY AUTOINCREMENT,
     fk_profile INTEGER NOT NULL,
-    amount REAL NOT NULL,
+    amount INTEGER NOT NULL,
     date TEXT NOT NULL,
     fk_source INTEGER NOT NULL,
     FOREIGN KEY (fk_source) REFERENCES sources(id_source),
@@ -98,8 +98,8 @@ const tableQueries = [
     id_summary INTEGER PRIMARY KEY AUTOINCREMENT,
     fk_profile INTEGER NOT NULL,
     date TEXT NOT NULL,
-    total_expense_amount REAL NOT NULL DEFAULT 0.0,
-    average_daily_expense REAL NOT NULL DEFAULT 0.0,
+    total_expense_amount INTEGER NOT NULL DEFAULT 0,
+    average_daily_expense INTEGER NOT NULL DEFAULT 0,
     UNIQUE (fk_profile, date),
     FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
   )`,
@@ -114,6 +114,8 @@ db.serialize(async () => {
   }
   console.log('✅ Struktura bazy danych została utworzona.');
 
+  // ------------------------------------------------
+  // --- Aktualizacja tabeli daily_summary ---
   // try {
   //   const row = await db.getPromise('SELECT MAX(date) AS lastDate FROM daily_summary');
   //   const safeDate = row?.lastDate || '2000-01-01';
@@ -122,7 +124,7 @@ db.serialize(async () => {
   //   await db.runPromise(`CREATE TABLE IF NOT EXISTS numbers (n INTEGER PRIMARY KEY);`);
   //   await db.runPromise(
   //     `WITH RECURSIVE cnt(n) AS (
-  //       SELECT 0 UNION ALL SELECT n + 1 FROM cnt WHERE n < 10000
+  //       SELECT 0 UNION ALL SELECT n + 1 FROM cnt WHERE n < 30000
   //     )
   //     INSERT OR IGNORE INTO numbers(n)
   //     SELECT n FROM cnt;`
@@ -156,7 +158,7 @@ db.serialize(async () => {
   //   await db.runPromise(
   //     `UPDATE daily_summary AS d
   //      SET average_daily_expense = (
-  //        SELECT ROUND(SUM(ds.total_expense_amount) * 1.0 / COUNT(*), 2)
+  //        SELECT CAST(SUM(ds.total_expense_amount) * 1.0 / COUNT(*) AS INTEGER)
   //        FROM daily_summary AS ds
   //        WHERE ds.fk_profile = d.fk_profile
   //        AND ds.date <= d.date

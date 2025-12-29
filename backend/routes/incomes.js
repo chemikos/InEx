@@ -72,14 +72,13 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message });
     }
   }
-  const { profileId, sourceId, amount, date } = req.body;
+  const { profileId, sourceId, date } = req.body;
+  const amount = parseAmountToCents(req.body.amount);
   try {
     await db.runPromise('BEGIN TRANSACTION;');
     if (!(await checkProfileExists(profileId))) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(404)
-        .json({ message: 'Profil o podanym ID nie istnieje.' });
+      return res.status(404).json({ message: 'Profil o podanym ID nie istnieje.' });
     }
     if (!(await checkSourceExists(sourceId, profileId))) {
       await db.runPromise('ROLLBACK;');
@@ -87,8 +86,7 @@ router.post('/', async (req, res) => {
         message: 'Typ dochodu o podanym ID nie istnieje w tym profilu.',
       });
     }
-    const sql =
-      'INSERT INTO incomes (fk_source, amount, date, fk_profile) VALUES (?, ?, ?, ?)';
+    const sql = 'INSERT INTO incomes (fk_source, amount, date, fk_profile) VALUES (?, ?, ?, ?)';
     const values = [sourceId, amount, date, profileId];
     const insertResult = await db.runPromise(sql, values);
     await db.runPromise('COMMIT;');
@@ -124,7 +122,7 @@ router.get('/', async (req, res) => {
     validationParams,
     req.query.sourceId,
     'id',
-    'source',
+    'source'
   );
   for (const param of validationParams) {
     const message = getValidationError(param.value, param.field, param.type);
@@ -137,9 +135,7 @@ router.get('/', async (req, res) => {
   const dateTo = validationParams[2].value;
 
   if (dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo)) {
-    return res
-      .status(400)
-      .json({ message: 'Data początkowa jest późniejsza niż data końcowa.' });
+    return res.status(400).json({ message: 'Data początkowa jest późniejsza niż data końcowa.' });
   }
 
   const limit = req.query.limit ? Number(req.query.limit) : 25;
@@ -149,18 +145,14 @@ router.get('/', async (req, res) => {
 
   const offset = req.query.offset ? Number(req.query.offset) : 0;
   if (!Number.isInteger(offset) || offset < 0) {
-    return res
-      .status(400)
-      .json({ message: 'Offset zawiera niepoprawne dane.' });
+    return res.status(400).json({ message: 'Offset zawiera niepoprawne dane.' });
   }
 
   const page = Math.floor(offset / limit) + 1;
 
   try {
     if (!(await checkProfileExists(profileId))) {
-      return res
-        .status(404)
-        .json({ message: 'Profil o podanym ID nie istnieje.' });
+      return res.status(404).json({ message: 'Profil o podanym ID nie istnieje.' });
     }
     const params = [profileId];
     let sql = `
@@ -207,20 +199,20 @@ router.get('/', async (req, res) => {
     const resultIncomes = await db.allPromise(sql, params);
 
     const totalIncomeAllTimeResult = await db.getPromise(
-      `SELECT ROUND(SUM(amount), 2) AS total FROM incomes WHERE fk_profile = ?;`,
-      [profileId],
+      `SELECT SUM(amount) AS total FROM incomes WHERE fk_profile = ?;`,
+      [profileId]
     );
     const totalIncomeAllTime = totalIncomeAllTimeResult?.total || 0;
 
     const totalIncomeCurrentYearResult = await db.getPromise(
-      `SELECT ROUND(SUM(amount), 2) AS total FROM incomes WHERE fk_profile = ? AND strftime('%Y', date) = strftime('%Y', 'now');`,
-      [profileId],
+      `SELECT SUM(amount) AS total FROM incomes WHERE fk_profile = ? AND strftime('%Y', date) = strftime('%Y', 'now');`,
+      [profileId]
     );
     const totalIncomeCurrentYear = totalIncomeCurrentYearResult?.total || 0;
 
     const totalIncomeCurrentMonthResult = await db.getPromise(
-      `SELECT ROUND(SUM(amount), 2) AS total FROM incomes WHERE fk_profile = ? AND strftime('%Y-%m', date) = strftime('%Y-%m', 'now');`,
-      [profileId],
+      `SELECT SUM(amount) AS total FROM incomes WHERE fk_profile = ? AND strftime('%Y-%m', date) = strftime('%Y-%m', 'now');`,
+      [profileId]
     );
     const totalIncomeCurrentMonth = totalIncomeCurrentMonthResult?.total || 0;
 
@@ -231,13 +223,13 @@ router.get('/', async (req, res) => {
     };
 
     const aggregatedIncome = await db.allPromise(
-      `SELECT s.name AS source_name, ROUND(SUM(i.amount), 2) AS total
+      `SELECT s.name AS source_name, SUM(i.amount) AS total
        FROM incomes i
        LEFT JOIN sources s ON s.id_source = i.fk_source
        WHERE i.fk_profile = ?
        GROUP BY s.name
        ORDER BY s.name`,
-      [profileId],
+      [profileId]
     );
 
     const metadata = {
@@ -260,9 +252,7 @@ router.get('/', async (req, res) => {
     });
   } catch (err) {
     console.error('[GET /incomes] Błąd serwera:', err);
-    return res
-      .status(500)
-      .json({ message: 'Wystąpił błąd serwera. Spróbuj ponownie później.' });
+    return res.status(500).json({ message: 'Wystąpił błąd serwera. Spróbuj ponownie później.' });
   }
 });
 
@@ -289,9 +279,7 @@ router.get('/:incomeId', async (req, res) => {
   const incomeId = req.params.incomeId;
   try {
     if (!(await checkProfileExists(profileId))) {
-      return res
-        .status(404)
-        .json({ message: 'Profil o podanym ID nie istnieje.' });
+      return res.status(404).json({ message: 'Profil o podanym ID nie istnieje.' });
     }
     const sql = `
           SELECT
@@ -352,27 +340,22 @@ router.put('/:incomeId', async (req, res) => {
       return res.status(400).json({ message });
     }
   }
-  const { profileId, sourceId, amount, date } = req.body;
+  const { profileId, sourceId, date } = req.body;
+  const amount = parseAmountToCents(req.body.amount);
   const incomeId = req.params.incomeId;
   try {
     await db.runPromise('BEGIN TRANSACTION;');
     if (!(await checkProfileExists(profileId))) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(404)
-        .json({ message: 'Profil o podanym ID nie istnieje.' });
+      return res.status(404).json({ message: 'Profil o podanym ID nie istnieje.' });
     }
     if (!(await checkIncomeExists(incomeId, profileId))) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(404)
-        .json({ message: 'Wpłata o podanym ID nie istnieje.' });
+      return res.status(404).json({ message: 'Wpłata o podanym ID nie istnieje.' });
     }
     if (!(await checkSourceExists(sourceId, profileId))) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(404)
-        .json({ message: 'Typ dochodu o podanym ID nie istnieje.' });
+      return res.status(404).json({ message: 'Typ dochodu o podanym ID nie istnieje.' });
     }
     const sql =
       'UPDATE incomes SET amount = ?, date = ?, fk_source = ? WHERE id_income = ? AND fk_profile = ?';
@@ -381,14 +364,11 @@ router.put('/:incomeId', async (req, res) => {
     if (updateResult.changes === 0) {
       await db.runPromise('ROLLBACK;');
       return res.status(404).json({
-        message:
-          'Wpłata o podanym ID nie istnieje w danym profilu lub nie zmieniono danych.',
+        message: 'Wpłata o podanym ID nie istnieje w danym profilu lub nie zmieniono danych.',
       });
     }
     await db.runPromise('COMMIT;');
-    return res
-      .status(200)
-      .json({ message: 'Wpłata zaktualizowana pomyślnie.' });
+    return res.status(200).json({ message: 'Wpłata zaktualizowana pomyślnie.' });
   } catch (err) {
     await db.runPromise('ROLLBACK;');
     return res.status(500).json({ message: err.message });
@@ -420,17 +400,13 @@ router.delete('/:incomeId', async (req, res) => {
     await db.runPromise('BEGIN TRANSACTION;');
     if (!(await checkProfileExists(profileId))) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(404)
-        .json({ message: 'Profil o podanym ID nie istnieje.' });
+      return res.status(404).json({ message: 'Profil o podanym ID nie istnieje.' });
     }
     const sql = 'DELETE FROM incomes WHERE id_income = ? AND fk_profile = ?';
     const deleteResult = await db.runPromise(sql, [incomeId, profileId]);
     if (deleteResult.changes === 0) {
       await db.runPromise('ROLLBACK;');
-      return res
-        .status(404)
-        .json({ message: 'Wpłata o podanym ID nie istnieje w tym profilu.' });
+      return res.status(404).json({ message: 'Wpłata o podanym ID nie istnieje w tym profilu.' });
     }
     await db.runPromise('COMMIT;');
     return res.status(200).json({ message: 'Wpłata usunięta pomyślnie.' });

@@ -193,6 +193,26 @@ function validateAmount(amount) {
   return parsedAmount === reCalculatedAmount;
 }
 
+function parseAmountToCents(amount) {
+  if (amount === null || amount === undefined || amount === '') {
+    return null;
+  }
+
+  const parsed = Number(amount);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null;
+  }
+
+  const cents = Math.round(parsed * 100);
+
+  // zabezpieczenie przed float error
+  if (Math.abs(cents / 100 - parsed) > 1e-9) {
+    return null;
+  }
+
+  return cents; // INTEGER
+}
+
 function validateDate(date) {
   if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return false;
@@ -283,6 +303,12 @@ function getErrorIfAmountInvalid(amount) {
   if (amount == null || amount === '') {
     return 'Kwota jest wymagana.';
   }
+
+  const cents = parseAmountToCents(amount);
+  if (cents === null) {
+    return 'Kwota zawiera niepoprawne dane.';
+  }
+
   if (!validateAmount(amount)) {
     return 'Kwota zawiera niepoprawne dane.';
   }
