@@ -246,15 +246,35 @@ const confirmDelete = async (
     <p class="expense-summary-box">
       <span>
         Wszystkie wydatki:
-        <span class="expense-summary-amount"> {{ totals.AllTimeExpenses }} zł</span>
+        <span class="expense-summary-amount"> {{ totals.expenses.AllTimeExpenses }} zł</span>
       </span>
       <span>
         Wydatki w tym roku:
-        <span class="expense-summary-amount">{{ totals.CurrentYearExpenses }} zł</span>
+        <span class="expense-summary-amount">{{ totals.expenses.CurrentYearExpenses }} zł</span>
       </span>
       <span>
         Wydatki w tym miesiącu:
-        <span class="expense-summary-amount">{{ totals.CurrentMonthExpenses }} zł</span>
+        <span class="expense-summary-amount">{{ totals.expenses.CurrentMonthExpenses }} zł</span>
+      </span>
+    </p>
+    <p class="expense-summary-box">
+      <span>
+        Bilans całkowity:
+        <span class="expense-summary-amount">
+          {{ totals.incomes.AllTimeIncomes - totals.expenses.AllTimeExpenses }} zł</span
+        >
+      </span>
+      <span>
+        Bilans w tym roku:
+        <span class="expense-summary-amount"
+          >{{ totals.incomes.CurrentYearIncomes - totals.expenses.CurrentYearExpenses }} zł</span
+        >
+      </span>
+      <span>
+        Bilans w tym miesiącu:
+        <span class="expense-summary-amount"
+          >{{ totals.incomes.CurrentMonthIncomes - totals.expenses.CurrentMonthExpenses }} zł</span
+        >
       </span>
     </p>
     <h3 class="form-title expense-title-border">Ostatnie Wydatki</h3>

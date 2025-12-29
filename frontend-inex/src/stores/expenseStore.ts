@@ -34,10 +34,17 @@ export interface UpdateExpenseData {
   itemId: number;
 }
 
-export interface ExpenseTotals {
-  AllTimeExpenses: number;
-  CurrentYearExpenses: number;
-  CurrentMonthExpenses: number;
+export interface Totals {
+  expenses: {
+    AllTimeExpenses: number;
+    CurrentYearExpenses: number;
+    CurrentMonthExpenses: number;
+  };
+  incomes: {
+    AllTimeIncomes: number;
+    CurrentYearIncomes: number;
+    CurrentMonthIncomes: number;
+  };
 }
 
 // NOWY TYP: Interfejs dla opcjonalnych parametrów filtrowania dat
@@ -69,10 +76,17 @@ export const useExpenseStore = defineStore('expense', () => {
 
   const expenses = ref<Expense[]>([]);
   const isLoading = ref(false);
-  const totals = ref<ExpenseTotals>({
-    AllTimeExpenses: 0,
-    CurrentYearExpenses: 0,
-    CurrentMonthExpenses: 0,
+  const totals = ref<Totals>({
+    expenses: {
+      AllTimeExpenses: 0,
+      CurrentYearExpenses: 0,
+      CurrentMonthExpenses: 0,
+    },
+    incomes: {
+      AllTimeIncomes: 0,
+      CurrentYearIncomes: 0,
+      CurrentMonthIncomes: 0,
+    },
   });
 
   // --- GETTERS (Computed) ---
@@ -123,10 +137,16 @@ export const useExpenseStore = defineStore('expense', () => {
 
       const response = await http.get(url);
       expenses.value = response.data.data as Expense[];
-      totals.value.AllTimeExpenses = response.data.totals.AllTime;
-      totals.value.CurrentYearExpenses = response.data.totals.CurrentYear;
-      totals.value.CurrentMonthExpenses = response.data.totals.CurrentMonth;
-      console.log('total: ' + totals.value.AllTimeExpenses);
+      totals.value.expenses.AllTimeExpenses = response.data.totals.expenses.AllTime;
+      totals.value.expenses.CurrentYearExpenses = response.data.totals.expenses.CurrentYear;
+      totals.value.expenses.CurrentMonthExpenses = response.data.totals.expenses.CurrentMonth;
+      console.log('total: ' + totals.value.expenses.AllTimeExpenses);
+
+      // incomes.value = response.data.data as Income[];
+      totals.value.incomes.AllTimeIncomes = response.data.totals.incomes.AllTime;
+      totals.value.incomes.CurrentYearIncomes = response.data.totals.incomes.CurrentYear;
+      totals.value.incomes.CurrentMonthIncomes = response.data.totals.incomes.CurrentMonth;
+      console.log('total: ' + totals.value.incomes.AllTimeIncomes);
     } catch (error) {
       console.error(`Błąd podczas pobierania wydatków dla profilu ${profileId}:`, error);
       expenses.value = [];

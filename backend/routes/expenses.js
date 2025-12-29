@@ -260,11 +260,40 @@ router.get('/', async (req, res) => {
     );
     const totalExpenseCurrentMonth = totalExpenseCurrentMonthResult?.total || 0;
 
+    const totalIncomeAllTimeResult = await db.getPromise(
+      `SELECT ROUND(SUM(amount), 2) AS total FROM incomes WHERE fk_profile = ?;`,
+      [profileId]
+    );
+    const totalIncomeAllTime = totalIncomeAllTimeResult?.total || 0;
+
+    const totalIncomeCurrentYearResult = await db.getPromise(
+      `SELECT ROUND(SUM(amount), 2) AS total FROM incomes WHERE fk_profile = ? AND strftime('%Y', date) = strftime('%Y', 'now');`,
+      [profileId]
+    );
+    const totalIncomeCurrentYear = totalIncomeCurrentYearResult?.total || 0;
+
+    const totalIncomeCurrentMonthResult = await db.getPromise(
+      `SELECT ROUND(SUM(amount), 2) AS total FROM incomes WHERE fk_profile = ? AND strftime('%Y-%m', date) = strftime('%Y-%m', 'now');`,
+      [profileId]
+    );
+    const totalIncomeCurrentMonth = totalIncomeCurrentMonthResult?.total || 0;
+
     const totals = {
-      AllTime: totalExpenseAllTime,
-      CurrentYear: totalExpenseCurrentYear,
-      CurrentMonth: totalExpenseCurrentMonth,
+      expenses: {
+        AllTime: totalExpenseAllTime,
+        CurrentYear: totalExpenseCurrentYear,
+        CurrentMonth: totalExpenseCurrentMonth,
+      },
+      incomes: {
+        AllTime: totalIncomeAllTime,
+        CurrentYear: totalIncomeCurrentYear,
+        CurrentMonth: totalIncomeCurrentMonth,
+      },
     };
+
+    // const totals = {
+
+    // };
 
     const aggregatedExpense = await db.allPromise(
       `SELECT i.name AS item_name, c.name AS category_name, ROUND(SUM(e.amount), 2) AS total
