@@ -141,7 +141,7 @@ const showConfirmModal = (message: string) => {
 const startEdit = (expense: Expense) => {
   message.value = { text: '', type: null };
   editingExpenseId.value = expense.id_expense;
-  tempAmount.value = expense.amount;
+  tempAmount.value = expense.amount / 100.0;
   tempDate.value = expense.date.slice(0, 10);
 };
 
@@ -167,7 +167,7 @@ const saveEdit = async (expense: Expense) => {
     return;
   }
 
-  const isChanged = newAmount !== expense.amount || newDate !== expense.date.slice(0, 10);
+  const isChanged = newAmount !== expense.amount / 100.0 || newDate !== expense.date.slice(0, 10);
 
   if (!isChanged) {
     cancelEdit();
@@ -222,7 +222,7 @@ const confirmDelete = async (
   }
   if (
     !showConfirmModal(
-      `Czy na pewno chcesz usunąć wydatek "${item_name} (${category_name})" w kwocie ${amount.toFixed(2)} zł?`,
+      `Czy na pewno chcesz usunąć wydatek "${item_name} (${category_name})" w kwocie ${(amount / 100.0).toFixed(2)} zł?`,
     )
   ) {
     return;
@@ -246,34 +246,55 @@ const confirmDelete = async (
     <p class="expense-summary-box">
       <span>
         Wszystkie wydatki:
-        <span class="expense-summary-amount"> {{ totals.expenses.AllTimeExpenses }} zł</span>
+        <span class="expense-summary-amount">
+          {{ (totals.expenses.AllTimeExpenses / 100.0).toFixed(2) }} zł</span
+        >
       </span>
       <span>
         Wydatki w tym roku:
-        <span class="expense-summary-amount">{{ totals.expenses.CurrentYearExpenses }} zł</span>
+        <span class="expense-summary-amount"
+          >{{ (totals.expenses.CurrentYearExpenses / 100.0).toFixed(2) }} zł</span
+        >
       </span>
       <span>
         Wydatki w tym miesiącu:
-        <span class="expense-summary-amount">{{ totals.expenses.CurrentMonthExpenses }} zł</span>
+        <span class="expense-summary-amount"
+          >{{ (totals.expenses.CurrentMonthExpenses / 100.0).toFixed(2) }} zł</span
+        >
       </span>
     </p>
     <p class="expense-summary-box">
       <span>
         Bilans całkowity:
         <span class="expense-summary-amount">
-          {{ totals.incomes.AllTimeIncomes - totals.expenses.AllTimeExpenses }} zł</span
+          {{
+            ((totals.incomes.AllTimeIncomes - totals.expenses.AllTimeExpenses) / 100.0).toFixed(2)
+          }}
+          zł</span
         >
       </span>
       <span>
         Bilans w tym roku:
         <span class="expense-summary-amount"
-          >{{ totals.incomes.CurrentYearIncomes - totals.expenses.CurrentYearExpenses }} zł</span
+          >{{
+            (
+              (totals.incomes.CurrentYearIncomes - totals.expenses.CurrentYearExpenses) /
+              100.0
+            ).toFixed(2)
+          }}
+          zł</span
         >
       </span>
       <span>
         Bilans w tym miesiącu:
         <span class="expense-summary-amount"
-          >{{ totals.incomes.CurrentMonthIncomes - totals.expenses.CurrentMonthExpenses }} zł</span
+          >{{
+            (
+              (totals.incomes.CurrentMonthIncomes - totals.expenses.CurrentMonthExpenses) /
+              100.0
+            ).toFixed(2)
+          }}
+          zł</span
         >
       </span>
     </p>
@@ -354,7 +375,7 @@ const confirmDelete = async (
     <p class="expense-summary-box">
       Łączna kwota wydatków:
       <span class="expense-summary-amount"
-        >{{ parseFloat(filteredTotalExpenses).toFixed(2) }} zł</span
+        >{{ (filteredTotalExpenses / 100.0).toFixed(2) }} zł</span
       >
     </p>
     <div v-if="isLoading" class="text-center p-8 text-gray-500">Ładowanie danych wydatków...</div>
@@ -411,7 +432,9 @@ const confirmDelete = async (
               </td>
             </template>
             <template v-else>
-              <td class="table-cell expense-amount-cell">-{{ expense.amount.toFixed(2) }}</td>
+              <td class="table-cell expense-amount-cell">
+                -{{ (expense.amount / 100.0).toFixed(2) }}
+              </td>
               <td class="table-cell">{{ expense.date.slice(0, 10) }}</td>
               <td class="table-cell">{{ expense.item_name }}</td>
               <td class="table-cell font-semibold">{{ expense.category_name }}</td>

@@ -75,7 +75,7 @@ export const useIncomeStore = defineStore('income', () => {
   const aggregated = ref<IncomeAggregated[]>([]);
 
   const filteredTotalIncomes = computed(() => {
-    return incomes.value.reduce((sum, income) => sum + income.amount, 0).toFixed(2);
+    return incomes.value.reduce((sum, income) => sum + income.amount, 0);
   }); // Nowy getter: Zwraca listę przychodów tylko dla zweryfikowanego profilu
 
   const activeIncomes = computed(() => {

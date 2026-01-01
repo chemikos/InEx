@@ -41,6 +41,7 @@ const {
   getValidationError,
   getNormalizedValue,
   getNormalizedValuesAndPushToParams,
+  parseAmountToCents,
 } = require('../helpers/helpers.js');
 
 router.post('/', async (req, res) => {

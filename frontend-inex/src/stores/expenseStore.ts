@@ -93,7 +93,7 @@ export const useExpenseStore = defineStore('expense', () => {
 
   const filteredTotalExpenses = computed(() => {
     // Obliczanie sumy wydatków
-    return expenses.value.reduce((sum, expense) => sum + expense.amount, 0).toFixed(2);
+    return expenses.value.reduce((sum, expense) => sum + expense.amount, 0);
   });
   // Zwraca listę wydatków tylko dla zweryfikowanego profilu
   const activeExpenses = computed(() => {

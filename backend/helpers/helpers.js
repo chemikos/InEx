@@ -414,4 +414,5 @@ module.exports = {
   getValidationError,
   getNormalizedValue,
   getNormalizedValuesAndPushToParams,
+  parseAmountToCents,
 };

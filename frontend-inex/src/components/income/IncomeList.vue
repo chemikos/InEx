@@ -138,7 +138,7 @@ const showConfirmModal = (message: string) => {
 const startEdit = (income: Income) => {
   message.value = { text: '', type: null };
   editingIncomeId.value = income.id_income;
-  tempAmount.value = income.amount;
+  tempAmount.value = income.amount / 100.0;
   tempDate.value = income.date.slice(0, 10);
 };
 
@@ -164,7 +164,7 @@ const saveEdit = async (income: Income) => {
     return;
   } // Sprawdzenie, czy coś się zmieniło
 
-  const isChanged = newAmount !== income.amount || newDate !== income.date.slice(0, 10);
+  const isChanged = newAmount !== income.amount / 100.0 || newDate !== income.date.slice(0, 10);
 
   if (!isChanged) {
     cancelEdit();
@@ -227,7 +227,7 @@ const confirmDelete = async (incomeId: number, amount: number, profileId: number
   }
   if (
     !showConfirmModal(
-      `Czy na pewno chcesz usunąć wpłatę ID: ${incomeId} (kwota: ${amount.toFixed(2)} zł). Potwierdzenie UI jest wymagane.`,
+      `Czy na pewno chcesz usunąć wpłatę ID: ${incomeId} (kwota: ${(amount / 100.0).toFixed(2)} zł). Potwierdzenie UI jest wymagane.`,
     )
   ) {
     return;
@@ -251,15 +251,21 @@ const confirmDelete = async (incomeId: number, amount: number, profileId: number
     <p class="expense-summary-box">
       <span>
         Wszystkie wpłaty:
-        <span class="expense-summary-amount"> {{ totals.AllTimeIncomes }} zł</span>
+        <span class="expense-summary-amount">
+          {{ (totals.AllTimeIncomes / 100.0).toFixed(2) }} zł</span
+        >
       </span>
       <span>
         Wpłaty w tym roku:
-        <span class="expense-summary-amount">{{ totals.CurrentYearIncomes }} zł</span>
+        <span class="expense-summary-amount"
+          >{{ (totals.CurrentYearIncomes / 100.0).toFixed(2) }} zł</span
+        >
       </span>
       <span>
         Wpłaty w tym miesiącu:
-        <span class="expense-summary-amount">{{ totals.CurrentMonthIncomes }} zł</span>
+        <span class="expense-summary-amount"
+          >{{ (totals.CurrentMonthIncomes / 100.0).toFixed(2) }} zł</span
+        >
       </span>
     </p>
 
@@ -273,7 +279,7 @@ const confirmDelete = async (incomeId: number, amount: number, profileId: number
       <tbody>
         <tr v-for="agg in aggregated" :key="agg.source_name" class="table-row income-row-hover">
           <td class="table-cell">{{ agg.source_name }}</td>
-          <td class="table-cell income-amount-cell">{{ agg.total.toFixed(2) }} PLN</td>
+          <td class="table-cell income-amount-cell">{{ (agg.total / 100.0).toFixed(2) }} PLN</td>
         </tr>
       </tbody>
     </table>
@@ -334,9 +340,7 @@ const confirmDelete = async (incomeId: number, amount: number, profileId: number
     </div>
     <p class="income-summary-box">
       Łączna kwota wpłat:
-      <span class="income-summary-amount"
-        >{{ parseFloat(filteredTotalIncomes).toFixed(2) }} zł</span
-      >
+      <span class="income-summary-amount">{{ (filteredTotalIncomes / 100.0).toFixed(2) }} zł</span>
     </p>
     <div v-if="isLoading" class="text-center p-8 text-gray-500">Ładowanie danych wpłat...</div>
     <div v-else-if="incomes.length > 0" class="overflow-x-auto">
@@ -363,7 +367,7 @@ const confirmDelete = async (incomeId: number, amount: number, profileId: number
                   style="width: 80px; padding: 0.3rem"
                 />
               </template>
-              <template v-else> {{ income.amount.toFixed(2) }} PLN </template>
+              <template v-else> {{ (income.amount / 100.0).toFixed(2) }} PLN </template>
             </td>
             <td class="table-cell">
               <template v-if="editingIncomeId === income.id_income">
