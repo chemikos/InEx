@@ -39,11 +39,15 @@ export interface Totals {
     AllTimeExpenses: number;
     CurrentYearExpenses: number;
     CurrentMonthExpenses: number;
+    PreviousYearExpenses: number;
+    PreviousMonthExpenses: number;
   };
   incomes: {
     AllTimeIncomes: number;
     CurrentYearIncomes: number;
     CurrentMonthIncomes: number;
+    PreviousYearIncomes: number;
+    PreviousMonthIncomes: number;
   };
 }
 
@@ -81,11 +85,15 @@ export const useExpenseStore = defineStore('expense', () => {
       AllTimeExpenses: 0,
       CurrentYearExpenses: 0,
       CurrentMonthExpenses: 0,
+      PreviousYearExpenses: 0,
+      PreviousMonthExpenses: 0,
     },
     incomes: {
       AllTimeIncomes: 0,
       CurrentYearIncomes: 0,
       CurrentMonthIncomes: 0,
+      PreviousYearIncomes: 0,
+      PreviousMonthIncomes: 0,
     },
   });
 
@@ -140,12 +148,16 @@ export const useExpenseStore = defineStore('expense', () => {
       totals.value.expenses.AllTimeExpenses = response.data.totals.expenses.AllTime;
       totals.value.expenses.CurrentYearExpenses = response.data.totals.expenses.CurrentYear;
       totals.value.expenses.CurrentMonthExpenses = response.data.totals.expenses.CurrentMonth;
+      totals.value.expenses.PreviousYearExpenses = response.data.totals.expenses.PreviousYear;
+      totals.value.expenses.PreviousMonthExpenses = response.data.totals.expenses.PreviousMonth;
       console.log('total: ' + totals.value.expenses.AllTimeExpenses);
 
       // incomes.value = response.data.data as Income[];
       totals.value.incomes.AllTimeIncomes = response.data.totals.incomes.AllTime;
       totals.value.incomes.CurrentYearIncomes = response.data.totals.incomes.CurrentYear;
       totals.value.incomes.CurrentMonthIncomes = response.data.totals.incomes.CurrentMonth;
+      totals.value.incomes.PreviousYearIncomes = response.data.totals.incomes.PreviousYear;
+      totals.value.incomes.PreviousMonthIncomes = response.data.totals.incomes.PreviousMonth;
       console.log('total: ' + totals.value.incomes.AllTimeIncomes);
     } catch (error) {
       console.error(`Błąd podczas pobierania wydatków dla profilu ${profileId}:`, error);

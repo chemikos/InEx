@@ -251,16 +251,30 @@ router.get('/', async (req, res) => {
       [profileId]
     );
     const totalExpenseAllTime = totalExpenseAllTimeResult?.total || 0;
+
     const totalExpenseCurrentYearResult = await db.getPromise(
       `SELECT SUM(amount) AS total FROM expenses WHERE fk_profile = ? AND strftime('%Y', date) = strftime('%Y', 'now');`,
       [profileId]
     );
     const totalExpenseCurrentYear = totalExpenseCurrentYearResult?.total || 0;
+
+    const totalExpensePreviousYearResult = await db.getPromise(
+      `SELECT SUM(amount) AS total FROM expenses WHERE fk_profile = ? AND strftime('%Y', date) = strftime('%Y', 'now', '-1 year');`,
+      [profileId]
+    );
+    const totalExpensePreviousYear = totalExpensePreviousYearResult?.total || 0;
+
     const totalExpenseCurrentMonthResult = await db.getPromise(
       `SELECT SUM(amount) AS total FROM expenses WHERE fk_profile = ? AND strftime('%Y-%m', date) = strftime('%Y-%m', 'now');`,
       [profileId]
     );
     const totalExpenseCurrentMonth = totalExpenseCurrentMonthResult?.total || 0;
+
+    const totalExpensePreviousMonthResult = await db.getPromise(
+      `SELECT SUM(amount) AS total FROM expenses WHERE fk_profile = ? AND strftime('%Y-%m', date) = strftime('%Y-%m', 'now', '-1 month');`,
+      [profileId]
+    );
+    const totalExpensePreviousMonth = totalExpensePreviousMonthResult?.total || 0;
 
     const totalIncomeAllTimeResult = await db.getPromise(
       `SELECT SUM(amount) AS total FROM incomes WHERE fk_profile = ?;`,
@@ -274,22 +288,38 @@ router.get('/', async (req, res) => {
     );
     const totalIncomeCurrentYear = totalIncomeCurrentYearResult?.total || 0;
 
+    const totalIncomePreviousYearResult = await db.getPromise(
+      `SELECT SUM(amount) AS total FROM incomes WHERE fk_profile = ? AND strftime('%Y', date) = strftime('%Y', 'now', '-1 year');`,
+      [profileId]
+    );
+    const totalIncomePreviousYear = totalIncomePreviousYearResult?.total || 0;
+
     const totalIncomeCurrentMonthResult = await db.getPromise(
       `SELECT SUM(amount) AS total FROM incomes WHERE fk_profile = ? AND strftime('%Y-%m', date) = strftime('%Y-%m', 'now');`,
       [profileId]
     );
     const totalIncomeCurrentMonth = totalIncomeCurrentMonthResult?.total || 0;
 
+    const totalIncomePreviousMonthResult = await db.getPromise(
+      `SELECT SUM(amount) AS total FROM incomes WHERE fk_profile = ? AND strftime('%Y-%m', date) = strftime('%Y-%m', 'now', '-1 month');`,
+      [profileId]
+    );
+    const totalIncomePreviousMonth = totalIncomePreviousMonthResult?.total || 0;
+
     const totals = {
       expenses: {
         AllTime: totalExpenseAllTime,
         CurrentYear: totalExpenseCurrentYear,
         CurrentMonth: totalExpenseCurrentMonth,
+        PreviousYear: totalExpensePreviousYear,
+        PreviousMonth: totalExpensePreviousMonth,
       },
       incomes: {
         AllTime: totalIncomeAllTime,
         CurrentYear: totalIncomeCurrentYear,
         CurrentMonth: totalIncomeCurrentMonth,
+        PreviousYear: totalIncomePreviousYear,
+        PreviousMonth: totalIncomePreviousMonth,
       },
     };
 

@@ -248,8 +248,8 @@ const confirmDelete = async (
         Wszystkie wydatki:
         <span class="expense-summary-amount">
           {{ (totals.expenses.AllTimeExpenses / 100.0).toFixed(2) }} zł</span
-        >
-      </span>
+        > </span
+      ><br />
       <span>
         Wydatki w tym roku:
         <span class="expense-summary-amount"
@@ -257,9 +257,21 @@ const confirmDelete = async (
         >
       </span>
       <span>
+        Wydatki w poprzednim roku:
+        <span class="expense-summary-amount"
+          >{{ (totals.expenses.PreviousYearExpenses / 100.0).toFixed(2) }} zł</span
+        > </span
+      ><br />
+      <span>
         Wydatki w tym miesiącu:
         <span class="expense-summary-amount"
           >{{ (totals.expenses.CurrentMonthExpenses / 100.0).toFixed(2) }} zł</span
+        >
+      </span>
+      <span>
+        Wydatki w poprzednim miesiącu:
+        <span class="expense-summary-amount"
+          >{{ (totals.expenses.PreviousMonthExpenses / 100.0).toFixed(2) }} zł</span
         >
       </span>
     </p>
@@ -271,8 +283,8 @@ const confirmDelete = async (
             ((totals.incomes.AllTimeIncomes - totals.expenses.AllTimeExpenses) / 100.0).toFixed(2)
           }}
           zł</span
-        >
-      </span>
+        > </span
+      ><br />
       <span>
         Bilans w tym roku:
         <span class="expense-summary-amount"
@@ -286,11 +298,35 @@ const confirmDelete = async (
         >
       </span>
       <span>
+        Bilans w poprzednim roku:
+        <span class="expense-summary-amount"
+          >{{
+            (
+              (totals.incomes.PreviousYearIncomes - totals.expenses.PreviousYearExpenses) /
+              100.0
+            ).toFixed(2)
+          }}
+          zł</span
+        > </span
+      ><br />
+      <span>
         Bilans w tym miesiącu:
         <span class="expense-summary-amount"
           >{{
             (
               (totals.incomes.CurrentMonthIncomes - totals.expenses.CurrentMonthExpenses) /
+              100.0
+            ).toFixed(2)
+          }}
+          zł</span
+        >
+      </span>
+      <span>
+        Bilans w poprzednim miesiącu:
+        <span class="expense-summary-amount"
+          >{{
+            (
+              (totals.incomes.PreviousMonthIncomes - totals.expenses.PreviousMonthExpenses) /
               100.0
             ).toFixed(2)
           }}
