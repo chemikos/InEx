@@ -103,12 +103,9 @@ const tableQueries = [
     UNIQUE (fk_profile, date),
     FOREIGN KEY (fk_profile) REFERENCES profiles(id_profile)
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_expenses_profile_date
-    ON expenses (fk_profile, date)`,
-  `CREATE INDEX IF NOT EXISTS idx_incomes_profile_date
-    ON incomes (fk_profile, date)`,
-  `CREATE INDEX IF NOT EXISTS idx_daily_summary_profile_date
-    ON daily_summary (fk_profile, date)`,
+  `CREATE INDEX IF NOT EXISTS idx_expenses_profile_date ON expenses (fk_profile, date)`,
+  `CREATE INDEX IF NOT EXISTS idx_incomes_profile_date ON incomes (fk_profile, date)`,
+  `CREATE INDEX IF NOT EXISTS idx_daily_summary_profile_date ON daily_summary (fk_profile, date)`,
 ];
 
 // --- Utworzenie tabel i aktualizacja daily_summary ---

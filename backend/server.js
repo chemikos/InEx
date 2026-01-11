@@ -19,6 +19,7 @@ const itemsRouter = require('./routes/items');
 const labelsRouter = require('./routes/labels');
 const profilesRouter = require('./routes/profiles');
 const sourcesRouter = require('./routes/sources');
+const reportsRouter = require('./routes/reports');
 
 // --- Middleware ---
 app.use(helmet());
@@ -35,6 +36,7 @@ app.use('/api/items', itemsRouter);
 app.use('/api/labels', labelsRouter);
 app.use('/api/profiles', profilesRouter);
 app.use('/api/sources', sourcesRouter);
+app.use('/api/reports', reportsRouter);
 
 app.get('/', (req, res) => {
   res.send('✅ Aplikacja InEx działa!');
