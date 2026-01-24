@@ -74,7 +74,7 @@ async function getDailyAverage({ profileId }) {
     data: rows.map((row) => ({
       date: row.date,
       historicalAverage: row.historical_average,
-      monthyAverage: row.monthly_average,
+      monthlyAverage: row.monthly_average,
     })),
   };
 }
