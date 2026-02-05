@@ -22,9 +22,31 @@ router.get('/balance', async (req, res) => {
   try {
     const profileId = Number(req.query.profileId);
 
-    const result = await reportsService.getBalance({ profileId });
+    const result = await reportsService.getBalance(profileId);
 
     res.json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+router.get('/expenses', async (req, res) => {
+  try {
+    const profileId = Number(req.query.profileId);
+
+    // const categories = await reportsService.getExpensesByCategory(profileId);
+    // const labels = await reportsService.getExpensesByLabel(profileId);
+    // const items = await reportsService.getExpensesByItem(profileId);
+
+    // const itemsInCategories = await reportsService.getItemsInCategories(profileId);
+
+    res.json({
+      categories: await reportsService.getExpensesByCategory(profileId),
+      labels: await reportsService.getExpensesByLabel(profileId),
+      items: await reportsService.getExpensesByItem(profileId),
+      // itemsInCategories: await reportsService.getItemsInCategories(profileId),
+      summary: await reportsService.getBalance(profileId),
+    });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -35,6 +57,20 @@ router.get('/expenses/categories', async (req, res) => {
     const profileId = Number(req.query.profileId);
 
     const result = await reportsService.getExpensesByCategory(profileId);
+
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+router.get('/expenses/:categoryId/items', async (req, res) => {
+  try {
+    const profileId = Number(req.query.profileId);
+    const categoryId = Number(req.params.categoryId);
+    const period = req.query.period;
+
+    const result = await reportsService.getExpensesByItemAndCategory(profileId, categoryId, period);
 
     res.json(result);
   } catch (err) {

@@ -3,7 +3,7 @@ WITH monthly_expenses AS (
     strftime('%Y-%m', date) AS period,
     SUM(amount) AS expense
   FROM expenses
-  WHERE fk_profile = :profileId
+  WHERE fk_profile = ?
   GROUP BY period
 ),
 monthly_incomes AS (
@@ -11,7 +11,7 @@ monthly_incomes AS (
     strftime('%Y-%m', date) AS period,
     SUM(amount) AS income
   FROM incomes
-  WHERE fk_profile = :profileId
+  WHERE fk_profile = ?
   GROUP BY period
 ),
 merged AS (

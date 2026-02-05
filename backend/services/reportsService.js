@@ -7,7 +7,25 @@ const dailyAverageSql = fs.readFileSync(
   'utf8'
 );
 
-const balanceSql = fs.readFileSync(path.join(__dirname, '../sql/reports/balance.sql'), 'utf8');
+const balanceSql = fs.readFileSync(
+  path.join(__dirname, '../sql/reports/balance/balance.sql'),
+  'utf8'
+);
+
+const balanceMonthlySql = fs.readFileSync(
+  path.join(__dirname, '../sql/reports/balance/monthly.sql'),
+  'utf8'
+);
+
+const balanceYearlySql = fs.readFileSync(
+  path.join(__dirname, '../sql/reports/balance/yearly.sql'),
+  'utf8'
+);
+
+const balanceTotalSql = fs.readFileSync(
+  path.join(__dirname, '../sql/reports/balance/total.sql'),
+  'utf8'
+);
 
 // const balanceYearlySql = fs.readFileSync(
 //   path.join(__dirname, '../sql/reports/balanceYearly.sql'),
@@ -58,6 +76,26 @@ const itemTotalSql = fs.readFileSync(
   'utf8'
 );
 
+const itemsInCategoriesSql = fs.readFileSync(
+  path.join(__dirname, '../sql/reports/expenses/itemsInCategories.sql'),
+  'utf8'
+);
+
+const itemsByCategoryMonthSql = fs.readFileSync(
+  path.join(__dirname, '../sql/reports/expenses/monthly/itemsByCategory.sql'),
+  'utf8'
+);
+
+const itemsByCategoryYearSql = fs.readFileSync(
+  path.join(__dirname, '../sql/reports/expenses/yearly/itemsByCategory.sql'),
+  'utf8'
+);
+
+const itemsByCategoryTotalSql = fs.readFileSync(
+  path.join(__dirname, '../sql/reports/expenses/total/itemsByCategory.sql'),
+  'utf8'
+);
+
 // --- Functions ---
 
 async function getDailyAverage({ profileId }) {
@@ -79,18 +117,14 @@ async function getDailyAverage({ profileId }) {
   };
 }
 
-async function getBalance({ profileId }) {
+async function getBalance(profileId) {
   if (!profileId) {
     throw new Error('profileId jest wymagane');
   }
-
-  const rows = await db.allPromise(balanceSql, {
-    ':profileId': profileId,
-  });
-
   return {
-    profileId,
-    data: rows,
+    month: await db.allPromise(balanceMonthlySql, [profileId, profileId]),
+    year: await db.allPromise(balanceYearlySql, [profileId, profileId]),
+    total: await db.allPromise(balanceTotalSql, [profileId, profileId]),
   };
 }
 
@@ -118,10 +152,36 @@ async function getExpensesByItem(profileId) {
   };
 }
 
+async function getItemsInCategories(profileId) {
+  const resultItems = await db.allPromise(itemsInCategoriesSql, [profileId]);
+  const itemsInCategories = resultItems.map((item) => {
+    return {
+      ...item,
+      // Konwersja stringa etykiet na tablicę stringów
+      item_names: item.item_names ? item.item_names.split(',') : [],
+      // Konwersja stringa ID etykiet na tablicę liczb
+      item_ids: item.item_ids ? item.item_ids.split(',').map((id) => parseInt(id)) : [],
+    };
+  });
+  return [...itemsInCategories];
+}
+
+async function getExpensesByItemAndCategory(profileId, categoryId, period) {
+  if (period === 'total')
+    return await db.allPromise(itemsByCategoryTotalSql, [profileId, categoryId]);
+  if (period.match(/^\d{4}$/))
+    return await db.allPromise(itemsByCategoryYearSql, [period, profileId, categoryId]);
+  if (period.match(/^\d{4}-\d{2}$/))
+    return await db.allPromise(itemsByCategoryMonthSql, [period, profileId, categoryId]);
+  throw new Error('Nieprawidłowy typ okresu');
+}
+
 module.exports = {
   getDailyAverage,
   getBalance,
   getExpensesByCategory,
   getExpensesByLabel,
   getExpensesByItem,
+  getItemsInCategories,
+  getExpensesByItemAndCategory,
 };

@@ -68,11 +68,10 @@ const monthSeparators = computed(() => {
     }));
 });
 
-
 const chartOptions = computed(() => ({
   chart: {
     type: 'line',
-    toolbar: { show: false },
+    toolbar: { show: true },
   },
   annotations: {
     xaxis: monthSeparators.value,
