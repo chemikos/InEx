@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import DailyAverageChart from '@/components/DailyAverageChart.vue';
+import DailyAverageChart from '@/components/expense/DailyAverageChart.vue';
 </script>
 <template>
   <div class="p-8 bg-white shadow-lg rounded-lg">

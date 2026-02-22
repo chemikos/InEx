@@ -18,6 +18,18 @@ router.get('/daily-average', async (req, res) => {
   }
 });
 
+router.get('/monthly-category-average', async (req, res) => {
+  try {
+    const profileId = Number(req.query.profileId);
+
+    const result = await reportsService.getMonthlyCategoryAverage(profileId);
+
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 router.get('/balance', async (req, res) => {
   try {
     const profileId = Number(req.query.profileId);

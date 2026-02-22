@@ -7,6 +7,11 @@ const dailyAverageSql = fs.readFileSync(
   'utf8'
 );
 
+const monthlyCategoryAverageSql = fs.readFileSync(
+  path.join(__dirname, '../sql/reports/monthlyCategoryAverage.sql'),
+  'utf8'
+);
+
 const balanceSql = fs.readFileSync(
   path.join(__dirname, '../sql/reports/balance/balance.sql'),
   'utf8'
@@ -117,6 +122,33 @@ async function getDailyAverage({ profileId }) {
   };
 }
 
+async function getMonthlyCategoryAverage(profileId) {
+  if (!profileId) {
+    throw new Error('profileId jest wymagane');
+  }
+
+  const rows = await db.allPromise(monthlyCategoryAverageSql, [profileId, profileId, profileId]);
+
+  return rows.map(simplifyRow);
+}
+
+function simplifyRow(row) {
+  const result = { month: row.period };
+
+  // 1️⃣ parse zewnętrznego JSON-a
+  const categories = JSON.parse(row.categories);
+
+  // 2️⃣ iteracja po kategoriach
+  for (const [categoryName, categoryValue] of Object.entries(categories)) {
+    // 3️⃣ parse wewnętrznego JSON-a
+    const parsedCategory = JSON.parse(categoryValue);
+
+    result[categoryName] = parsedCategory.monthly_category_average;
+  }
+
+  return result;
+}
+
 async function getBalance(profileId) {
   if (!profileId) {
     throw new Error('profileId jest wymagane');
@@ -184,4 +216,5 @@ module.exports = {
   getExpensesByItem,
   getItemsInCategories,
   getExpensesByItemAndCategory,
+  getMonthlyCategoryAverage,
 };

@@ -22,14 +22,18 @@ import LabelList from '@/components/dictionary/LabelList.vue';
       <AddSourceForm />
     </div>
 
+    <h3 class="subsection-title mt-8">Kategorie</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <CategoryList />
+    </div>
+
     <h3 class="subsection-title">Pozycje Wydatków (Items)</h3>
     <ItemList />
 
-    <h3 class="subsection-title mt-8">Źródła, Kategorie i Etykiety</h3>
+    <h3 class="subsection-title mt-8">Etykiety i Źródła</h3>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <SourceList />
-      <CategoryList />
       <LabelList />
+      <SourceList />
     </div>
   </div>
 </template>

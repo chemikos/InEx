@@ -174,7 +174,7 @@ const executeDelete = async () => {
 
 <template>
   <div class="table-container item-list-container">
-    <h3 class="form-title item-title-border">Pozycje Wydatków (Items)</h3>
+    <!-- <h3 class="form-title item-title-border">Pozycje Wydatków (Items)</h3> -->
     <div
       v-if="message.text"
       :class="{
