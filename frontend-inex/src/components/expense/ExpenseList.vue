@@ -9,23 +9,28 @@ import {
 } from '@/stores/expenseStore'; // Importujemy ExpenseFilterParams
 import { useProfileStore } from '@/stores/profileStore';
 import { useItemStore } from '@/stores/itemStore';
+import { useCategoryStore } from '@/stores/categoryStore';
 
 const expenseStore = useExpenseStore();
 const profileStore = useProfileStore();
 const itemStore = useItemStore();
+const categoryStore = useCategoryStore();
 
 // Destrukturyzacja z profileStore dla bezpiecznego ID i stanu gotowości
 const { verifiedActiveProfileId } = storeToRefs(profileStore);
 const { expenses, isLoading, filteredTotalExpenses, totals } = storeToRefs(expenseStore);
-const { items } = storeToRefs(itemStore);
+// const { items } = storeToRefs(itemStore);
+const { categories } = storeToRefs(categoryStore);
 
 const currentProfileId = computed(() => verifiedActiveProfileId.value);
 
 // --- STAN FILTROWANIA ---
 // Używamy ref dla listy wybranych ID Pozycji
 const selectedItemIds = ref<number[]>([]);
+const selectedCategoryIds = ref<number[]>([]);
 // Pole do przechowywania wszystkich dostępnych pozycji. Pobierane z ItemStore.
-const availableItems = computed(() => items.value);
+// const availableItems = computed(() => items.value);
+const availableCategories = computed(() => categories.value);
 
 // --- POMOCNICY DATY ---
 const getDefaultDateForCurrentMonth = (isStart: boolean): string => {
@@ -79,6 +84,7 @@ const applyFilter = async () => {
       dateTo: end,
       // WAŻNA ZMIANA: Używamy selectedItemIds, które przechowuje już listę numerów
       itemIds: selectedItemIds.value.length > 0 ? selectedItemIds.value : undefined,
+      categoryIds: selectedCategoryIds.value.length > 0 ? selectedCategoryIds.value : undefined,
     };
     await expenseStore.fetchExpenses(profileId, filters);
   } catch (error) {
@@ -95,6 +101,7 @@ const resetFilter = () => {
   isDateFromActive.value = true;
   isDateToActive.value = true;
   selectedItemIds.value = []; // Resetowanie filtra Pozycji
+  selectedCategoryIds.value = [];
   applyFilter();
 };
 
@@ -113,9 +120,15 @@ watch(
         console.error('Błąd podczas ładowania pozycji do filtra:', error);
         message.value = { text: 'Nie udało się załadować pozycji do filtra.', type: 'error' };
       });
+      // 3. Załadowanie listy Kategorii do filtra
+      categoryStore.fetchCategories(newId).catch((error) => {
+        console.error('Błąd podczas ładowania kategorii do filtra:', error);
+        message.value = { text: 'Nie udało się załadować kategorii do filtra.', type: 'error' };
+      });
     } else {
       expenseStore.expenses = [];
       itemStore.items = [];
+      categoryStore.categories = [];
     }
   },
   {
@@ -366,7 +379,36 @@ const confirmDelete = async (
           />
         </div>
       </div>
+      <!-- filtr do kategorii - początek -->
       <div class="filter-group">
+        <div class="inline">
+          <!-- <label for="categoryFilter" class="form-label">Filtr Kategorii:</label> -->
+          <select
+            id="categoryFilter"
+            v-model="selectedCategoryIds"
+            multiple
+            class="form-input custom-select-multi"
+            :disabled="availableCategories.length === 0"
+          >
+            <!-- <option v-if="availableCategories.length === 0" disabled value="">
+              Ładowanie kategorii...
+            </option>
+            <option v-else-if="availableCategories.length === 0" disabled value="">
+              Brak dostępnych kategorii
+            </option> -->
+            <option
+              v-for="category in availableCategories"
+              :key="category.id_category"
+              :value="category.id_category"
+            >
+              {{ category.name }} ({{ category.id_category }})
+            </option>
+          </select>
+        </div>
+      </div>
+      <!-- filtr do kategorii - koniec -->
+      <!-- filtr do pozycji - początek -->
+      <!-- <div class="filter-group">
         <div class="inline">
           <label for="itemFilter" class="form-label">Filtr po Pozycji:</label>
           <select
@@ -375,19 +417,20 @@ const confirmDelete = async (
             multiple
             class="form-input custom-select-multi"
             :disabled="availableItems.length === 0"
-          >
-            <!-- <option v-if="availableItems.length === 0" disabled value="">
+          > -->
+      <!-- <option v-if="availableItems.length === 0" disabled value="">
               Ładowanie pozycji...
             </option>
             <option v-else-if="availableItems.length === 0" disabled value="">
               Brak dostępnych pozycji
             </option> -->
-            <option v-for="item in availableItems" :key="item.id_item" :value="item.id_item">
+      <!-- <option v-for="item in availableItems" :key="item.id_item" :value="item.id_item">
               {{ item.name }} ({{ item.id_item }})
             </option>
           </select>
         </div>
-      </div>
+      </div> -->
+      <!-- filtr do pozycji - koniec -->
       <div class="inline">
         <button @click="applyFilter" :disabled="isLoading" class="btn-primary-small w-full">
           <span v-if="isLoading">Filtrowanie...</span>

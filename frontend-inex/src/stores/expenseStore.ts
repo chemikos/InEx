@@ -56,6 +56,7 @@ export interface ExpenseFilterParams {
   dateFrom?: string | null;
   dateTo?: string | null;
   itemIds?: number[] | null;
+  categoryIds?: number[] | null;
 }
 
 // --- HELPER FUNKCJA DO OBSŁUGI BŁĘDÓW ---
@@ -139,6 +140,9 @@ export const useExpenseStore = defineStore('expense', () => {
       }
       if (filters.itemIds && filters.itemIds.length > 0) {
         filters.itemIds.forEach((id) => params.append('itemId', id.toString()));
+      }
+      if (filters.categoryIds && filters.categoryIds.length > 0) {
+        filters.categoryIds.forEach((id) => params.append('categoryId', id.toString()));
       }
 
       const url = `/expenses?${params.toString()}`;
