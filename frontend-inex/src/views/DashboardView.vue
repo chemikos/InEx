@@ -7,8 +7,8 @@ const profileStore = useProfileStore();
 const mainTabs = [
   { name: 'Wydatki', path: '/dashboard/wydatki/transakcje' },
   { name: 'Inwestycje', path: '/dashboard/inwestycje/portfel' },
-  // { name: 'Raporty', path: '/dashboard/raporty' },
-  // { name: 'Ustawienia', path: '/dashboard/ustawienia' },
+  { name: 'Raporty', path: '/dashboard/raporty' },
+  { name: 'Ustawienia', path: '/dashboard/ustawienia' },
 ];
 </script>
 

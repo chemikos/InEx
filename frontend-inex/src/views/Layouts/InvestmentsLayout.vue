@@ -14,15 +14,15 @@ const activeSubPath = computed(() => route.path);
 </script>
 
 <template>
-  <div class="expense-layout-grid">
-    <nav class="sidebar">
-      <h3 class="sidebar-title">Menu Inwestycji</h3>
-      <ul>
+  <div class="investment-layout">
+    <nav class="top-nav">
+      <h3 class="top-nav-title">Menu Inwestycji</h3>
+      <ul class="top-nav-list">
         <li v-for="item in investmentMenuItems" :key="item.name">
           <RouterLink
             :to="item.path"
             :class="{ 'active-link': activeSubPath.startsWith(item.path) }"
-            class="sidebar-link"
+            class="top-nav-link"
           >
             {{ item.name }}
           </RouterLink>
@@ -37,58 +37,64 @@ const activeSubPath = computed(() => route.path);
 </template>
 
 <style scoped>
-.expense-layout-grid {
-  display: grid;
-  grid-template-columns: 250px 1fr; /* Szerokość menu bocznego vs zawartość */
-  gap: 2rem;
-  min-height: 80vh; /* Zapewnienie, że layout zajmuje ekran */
+.investment-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 80vh;
+  width: 100%;
 }
 
-.sidebar {
-  padding: 1rem 0;
-  background-color: #f9fafb; /* gray-50 */
-  border-right: 1px solid #e5e7eb; /* gray-200 */
+.top-nav {
+  padding: 1rem 2rem;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
   border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
-.sidebar-title {
+.top-nav-title {
   font-size: 1.1rem;
   font-weight: 600;
   color: #1f2937;
-  margin-bottom: 1rem;
-  padding: 0 1rem;
+  margin: 0 0 0.75rem 0;
 }
 
-.sidebar ul {
+.top-nav-list {
   list-style: none;
   padding: 0;
   margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-.sidebar-link {
-  display: block;
-  padding: 0.75rem 1rem;
+.top-nav-link {
+  display: inline-block;
+  padding: 0.5rem 1rem;
   text-decoration: none;
-  color: #4b5563; /* gray-600 */
-  transition:
-    background-color 0.2s,
-    color 0.2s;
-  border-left: 3px solid transparent;
+  color: #4b5563;
+  transition: background-color 0.2s, color 0.2s;
+  border-radius: 0.375rem;
+  border-bottom: 3px solid transparent;
 }
 
-.sidebar-link:hover {
-  background-color: #f3f4f6; /* gray-100 */
+.top-nav-link:hover {
+  background-color: #f3f4f6;
   color: #1f2937;
 }
 
 .active-link {
-  background-color: #d1fae5; /* green-100 */
-  color: #059669; /* green-600 */
+  background-color: #d1fae5;
+  color: #059669;
   font-weight: 600;
-  border-left-color: #10b981; /* green-500 */
+  border-bottom-color: #10b981;
 }
 
 .content-area {
-  padding: 0;
+  flex: 1;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 2rem;
+  box-sizing: border-box;
 }
 </style>
